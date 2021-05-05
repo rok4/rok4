@@ -37,7 +37,7 @@
 
 #include <cmath>
 #include "Pyramid.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Message.h"
 #include "Grid.h"
 #include "Decoder.h"
@@ -51,7 +51,6 @@
 #include "TiffEncoder.h"
 #include "Level.h"
 #include <cfloat>
-#include "intl.h"
 #include "config.h"
 #include "EmptyImage.h"
 
@@ -122,7 +121,7 @@ Pyramid::Pyramid (Pyramid* obj, ServerXML* sxml): Source(PYRAMID) {
     // On récupère bien le pointeur vers le nouveau TMS (celui de la nouvelle liste)
     tms = sxml->getTMS (obj->tms->getId());
     if ( tms == NULL ) {
-        LOGGER_ERROR ( "Une pyramide clonée reference un TMS [" << obj->tms->getId() << "] qui n'existe plus." );
+        BOOST_LOG_TRIVIAL(error) <<  "Une pyramide clonée reference un TMS [" << obj->tms->getId() << "] qui n'existe plus." ;
         return;
         // Tester la nullité du TMS en sortie pour faire remonter l'erreur
     }
@@ -133,7 +132,7 @@ Pyramid::Pyramid (Pyramid* obj, ServerXML* sxml): Source(PYRAMID) {
     for ( itLevel = obj->levels.begin(); itLevel != obj->levels.end(); itLevel++ ) {
         Level* levObj = new Level(itLevel->second, sxml, tms);
         if (levObj->getTm() == NULL) {
-            LOGGER_ERROR ( "Impossible de cloner le niveau " << itLevel->first );
+            BOOST_LOG_TRIVIAL(error) <<  "Impossible de cloner le niveau " << itLevel->first ;
             tms = NULL;
             // Tester la nullité du TMS en sortie pour faire remonter l'erreur
             return;
@@ -198,7 +197,7 @@ Image* Pyramid::getbbox ( ServicesXML* servicesXML, BoundingBox<double> bbox, in
     // On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
     double resolution_x, resolution_y;
 
-    LOGGER_DEBUG ( "source tms->getCRS() is " << tms->getCrs().getProj4Code() << " and destination dst_crs is " << dst_crs.getProj4Code() );
+    BOOST_LOG_TRIVIAL(debug) <<  "source tms->getCRS() is " << tms->getCrs().getProj4Code() << " and destination dst_crs is " << dst_crs.getProj4Code() ;
 
     if ( tms->getCrs() == dst_crs || servicesXML->are_the_two_CRS_equal( tms->getCrs().getProj4Code(), dst_crs.getProj4Code() ) ) {
         resolution_x = ( bbox.xmax - bbox.xmin ) / width;
@@ -207,14 +206,14 @@ Image* Pyramid::getbbox ( ServicesXML* servicesXML, BoundingBox<double> bbox, in
         Grid* grid = new Grid ( width, height, bbox );
 
 
-        LOGGER_DEBUG ( _ ( "debut pyramide" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "debut pyramide" ;
         if ( !grid->reproject ( dst_crs.getProj4Code(),tms->getCrs().getProj4Code() ) ) {
             // BBOX invalide
             delete grid;
             error=1;
             return 0;
         }
-        LOGGER_DEBUG ( _ ( "fin pyramide" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "fin pyramide" ;
 
         resolution_x = ( grid->bbox.xmax - grid->bbox.xmin ) / width;
         resolution_y = ( grid->bbox.ymax - grid->bbox.ymin ) / height;
@@ -233,7 +232,7 @@ Image* Pyramid::getbbox ( ServicesXML* servicesXML, BoundingBox<double> bbox, in
     }
 
     std::string l = best_level ( resolution_x, resolution_y, false );
-    LOGGER_DEBUG ( _ ( "best_level=" ) << l << _ ( " resolution requete=" ) << resolution_x << " " << resolution_y );
+    BOOST_LOG_TRIVIAL(debug) <<   "best_level=" << l <<  " resolution requete=" << resolution_x << " " << resolution_y ;
 
     if ( tms->getCrs() == dst_crs || servicesXML->are_the_two_CRS_equal( tms->getCrs().getProj4Code(), dst_crs.getProj4Code() ) ) {
         return levels[l]->getbbox ( servicesXML, bbox, width, height, interpolation, error );
@@ -258,11 +257,11 @@ Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> b
 
     ExtendedCompoundImageFactory facto;
     std::vector<Image*> images;
-    LOGGER_DEBUG ( _ ( "BBox en dehors de la definition du CRS" ) );
+    BOOST_LOG_TRIVIAL(debug) <<   "BBox en dehors de la definition du CRS" ;
 
 
     if ( cropBBox.xmin == cropBBox.xmax || cropBBox.ymin == cropBBox.ymax ) { // BBox out of CRS definition area Only NoData
-        LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "BBox decoupe incorrect" ;
     } else {
 
         double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
@@ -294,20 +293,20 @@ Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> b
         newHeigth += 2;
         newWidth += 2;
 
-        LOGGER_DEBUG ( _ ( "New Width = " ) << newWidth << " " << _ ( "New Height = " ) << newHeigth );
-        LOGGER_DEBUG ( _ ( "ratio_x = " ) << ratio_x << " " << _ ( "ratio_y = " ) << ratio_y );
+        BOOST_LOG_TRIVIAL(debug) <<   "New Width = " << newWidth << " " <<  "New Height = " << newHeigth ;
+        BOOST_LOG_TRIVIAL(debug) <<   "ratio_x = " << ratio_x << " " <<  "ratio_y = " << ratio_y ;
 
 
         Image* tmp = 0;
         int cropError = 0;
         if ( (1/ratio_x > 5 && newWidth < 3) || (newHeigth < 3 && 1/ratio_y > 5) ){ //Too small BBox
-            LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
+            BOOST_LOG_TRIVIAL(debug) <<   "BBox decoupe incorrect" ;
             tmp = 0;
         } else if ( newWidth > 0 && newHeigth > 0 ) {
             tmp = levels[l]->getbbox ( servicesXML, cropBBox, newWidth, newHeigth, tms->getCrs(), dst_crs, interpolation, cropError );
         }
         if ( tmp != 0 ) {
-            LOGGER_DEBUG ( _ ( "Image decoupe valide" ) );
+            BOOST_LOG_TRIVIAL(debug) <<   "Image decoupe valide" ;
             images.push_back ( tmp );
         }
     }
@@ -324,24 +323,24 @@ Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> b
 
 Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesXML* servicesXML, int width, int height, Interpolation::KernelType interpolation, int error){
 
-    LOGGER_INFO ( "Create Based Slab " );
+    BOOST_LOG_TRIVIAL(info) <<  "Create Based Slab " ;
     //variables
     BoundingBox<double> askBbox = bbox;
     BoundingBox<double> dataBbox = levels[l]->TMLimitsToBbox();
 
     //on regarde si elle n'est pas en dehors de la defintion de son CRS
     if (!dst_crs.validateBBox ( bbox )) {
-        LOGGER_DEBUG ( "Bbox plus grande que sa definition dans le CRS, croppe à la taille maximale du CRS " );
+        BOOST_LOG_TRIVIAL(debug) <<  "Bbox plus grande que sa definition dans le CRS, croppe à la taille maximale du CRS " ;
         askBbox = dst_crs.cropBBox ( bbox );
     }
 
     //on met les deux bbox dans le même système de projection
     if ( servicesXML->are_the_two_CRS_equal( tms->getCrs().getProj4Code(), dst_crs.getProj4Code() ) ) {
-        LOGGER_DEBUG ( "Les deux CRS sont équivalents " );
+        BOOST_LOG_TRIVIAL(debug) <<  "Les deux CRS sont équivalents " ;
     } else {
-        LOGGER_DEBUG ( "Conversion de la bbox demandee et de la bbox des donnees en EPSG:4326 " );
+        BOOST_LOG_TRIVIAL(debug) <<  "Conversion de la bbox demandee et de la bbox des donnees en EPSG:4326 " ;
         if (askBbox.reproject(dst_crs.getProj4Code(),"epsg:4326") !=0 || dataBbox.reproject(tms->getCrs().getProj4Code(),"epsg:4326") != 0) {
-            LOGGER_ERROR("Ne peut pas reprojeter les bbox");
+            BOOST_LOG_TRIVIAL(error) << "Ne peut pas reprojeter les bbox";
             return NULL;
         }
     }
@@ -349,14 +348,14 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
     //on compare les deux bbox
     if (tms->getCrs() == dst_crs) {
         //elles sont identiques
-        LOGGER_DEBUG ( "Les deux bbox sont identiques " );
+        BOOST_LOG_TRIVIAL(debug) <<  "Les deux bbox sont identiques " ;
         return createReprojectedImage(l, bbox, dst_crs, servicesXML, width, height, interpolation, error);
     } else {
         if (askBbox.containsInside(dataBbox)) {
             //les données sont a l'intérieur de la bbox demandée
-            LOGGER_DEBUG ( "les données sont a l'intérieur de la bbox demandée " );
+            BOOST_LOG_TRIVIAL(debug) <<  "les données sont a l'intérieur de la bbox demandée " ;
             if (dataBbox.reproject("epsg:4326",dst_crs.getProj4Code()) != 0) {
-                LOGGER_ERROR("Ne peut pas reprojeter la bbox des données");
+                BOOST_LOG_TRIVIAL(error) << "Ne peut pas reprojeter la bbox des données";
                 return NULL;
             }
             return createExtendedCompoundImage(l,bbox,dataBbox,dst_crs,servicesXML,width,height,interpolation,error);
@@ -365,14 +364,14 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
 
             if (dataBbox.containsInside(askBbox)) {
                 //la bbox demandée est plus petite que les données disponibles
-                LOGGER_DEBUG ("la bbox demandée est plus petite que les données disponibles");
+                BOOST_LOG_TRIVIAL(debug) << "la bbox demandée est plus petite que les données disponibles";
                 return createReprojectedImage(l, bbox, dst_crs, servicesXML, width, height, interpolation, error);
 
             } else {
 
                 if (!dataBbox.intersects(askBbox)) {
                     //les deux ne s'intersectent pas donc on renvoit une image de nodata
-                    LOGGER_DEBUG ("les deux ne s'intersectent pas donc on renvoit une image de nodata");
+                    BOOST_LOG_TRIVIAL(debug) << "les deux ne s'intersectent pas donc on renvoit une image de nodata";
 
                     EmptyImage* fond = new EmptyImage(width, height, channels, ndValues);
                     fond->setBbox(bbox);
@@ -380,10 +379,10 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
 
                 } else {
                     //les deux s'intersectent
-                    LOGGER_DEBUG ("les deux bbox s'intersectent");
+                    BOOST_LOG_TRIVIAL(debug) << "les deux bbox s'intersectent";
                     BoundingBox<double> partBbox = askBbox.cutIntersectionWith(dataBbox);
                     if (partBbox.reproject("epsg:4326",dst_crs.getProj4Code()) != 0) {
-                        LOGGER_ERROR("Ne peut pas reprojeter la bbox partielle");
+                        BOOST_LOG_TRIVIAL(error) << "Ne peut pas reprojeter la bbox partielle";
                         return NULL;
                     }
                     return createExtendedCompoundImage(l,bbox,partBbox,dst_crs,servicesXML,width,height,interpolation,error);

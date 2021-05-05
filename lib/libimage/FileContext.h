@@ -50,10 +50,11 @@
 #ifndef FILE_CONTEXT_H
 #define FILE_CONTEXT_H
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Context.h"
 #include <iostream>
 #include <sys/stat.h>
+#include <fstream>
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -141,8 +142,8 @@ public:
 
 
     virtual void print() {
-        LOGGER_INFO ( "------ File Context -------" );
-        LOGGER_INFO ( "\t- root directory = " << root_dir );
+        BOOST_LOG_TRIVIAL(info) <<  "------ File Context -------" ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- root directory = " << root_dir ;
     }
 
     virtual std::string toString() {

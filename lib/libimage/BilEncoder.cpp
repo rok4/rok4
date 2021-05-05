@@ -38,7 +38,7 @@
 #include <iostream>
 
 #include "BilEncoder.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 size_t BilEncoder::read ( uint8_t *buffer, size_t size ) {
     size_t offset = 0;

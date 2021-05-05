@@ -62,7 +62,7 @@ protected:
     size_t rawBufferSize;
     
     virtual void prepareHeader(){
-	LOGGER_DEBUG("TiffPackBitsEncoder : preparation de l'en-tete");
+	BOOST_LOG_TRIVIAL(debug) << "TiffPackBitsEncoder : preparation de l'en-tete";
 	sizeHeader = TiffHeader::headerSize ( image->getChannels() );
 	header = new uint8_t[sizeHeader];
 	if ( image->getChannels()==1 )
@@ -82,7 +82,7 @@ protected:
     }
     
     virtual void prepareBuffer(){
-	LOGGER_DEBUG("TiffPackBitsEncoder : preparation du buffer d'image");
+	BOOST_LOG_TRIVIAL(debug) << "TiffPackBitsEncoder : preparation du buffer d'image";
 	int linesize = image->getWidth()*image->getChannels();
 	tmpBuffer = new uint8_t[linesize* image->getHeight() * sizeof ( T ) *2];
 	tmpBufferSize = 0;

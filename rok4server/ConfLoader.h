@@ -49,7 +49,6 @@
 #include <vector>
 #include <string>
 
-#include "intl.h"
 #include "config.h"
 
 #include "ServerXML.h"

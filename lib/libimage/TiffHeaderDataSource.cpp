@@ -22,74 +22,74 @@ TiffHeaderDataSource::TiffHeaderDataSource ( DataSource* dataSource,
     switch ( format ) {
     case Rok4Format::TIFF_RAW_INT8:
         if ( channel == 1 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_RAW_INT8_GRAY" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_RAW_INT8_GRAY" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_RAW_INT8_GRAY, header_size );
         } else if ( channel == 3 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_RAW_INT8_RGB" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_RAW_INT8_RGB" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_RAW_INT8_RGB, header_size );
         } else if ( channel == 4 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_RAW_INT8_RGBA" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_RAW_INT8_RGBA" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_RAW_INT8_RGBA, header_size );
         }
         break;
     case Rok4Format::TIFF_LZW_INT8:
         if ( channel == 1 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_LZW_INT8_GRAY" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_LZW_INT8_GRAY" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_LZW_INT8_GRAY, header_size );
         } else if ( channel == 3 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_LZW_INT8_RGB" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_LZW_INT8_RGB" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_LZW_INT8_RGB, header_size );
         } else if ( channel == 4 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_LZW_INT8_RGBA" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_LZW_INT8_RGBA" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_LZW_INT8_RGBA, header_size );
         }
         break;
     case Rok4Format::TIFF_ZIP_INT8:
         if ( channel == 1 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_ZIP_INT8_GRAY" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_ZIP_INT8_GRAY" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_ZIP_INT8_GRAY, header_size );
         } else if ( channel == 3 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_ZIP_INT8_RGB" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_ZIP_INT8_RGB" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_ZIP_INT8_RGB, header_size );
         } else if ( channel == 4 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_ZIP_INT8_RGBA" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_ZIP_INT8_RGBA" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_ZIP_INT8_RGBA, header_size );
         }
         break;
     case Rok4Format::TIFF_PKB_INT8:
         if ( channel == 1 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_PKB_INT8_GRAY" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_PKB_INT8_GRAY" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_PKB_INT8_GRAY, header_size );
         } else if ( channel == 3 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_PKB_INT8_RGB" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_PKB_INT8_RGB" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_PKB_INT8_RGB, header_size );
         } else if ( channel == 4 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_PKB_INT8_RGBA" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_PKB_INT8_RGBA" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_PKB_INT8_RGBA, header_size );
         }
         break;
 
     case Rok4Format::TIFF_RAW_FLOAT32:
         if ( channel == 1 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_RAW_FLOAT32_GRAY" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_RAW_FLOAT32_GRAY" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_RAW_FLOAT32_GRAY, header_size );
         }
         break;
     case Rok4Format::TIFF_LZW_FLOAT32:
         if ( channel == 1 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_LZW_FLOAT32_GRAY" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_LZW_FLOAT32_GRAY" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_LZW_FLOAT32_GRAY, header_size );
         }
         break;
     case Rok4Format::TIFF_ZIP_FLOAT32:
         if ( channel == 1 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_ZIP_FLOAT32_GRAY" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_ZIP_FLOAT32_GRAY" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_ZIP_FLOAT32_GRAY, header_size );
         }
         break;
     case Rok4Format::TIFF_PKB_FLOAT32:
         if ( channel == 1 ) {
-            LOGGER_DEBUG ( "TIFF_HEADER_PKB_FLOAT32_GRAY" );
+            BOOST_LOG_TRIVIAL(debug) <<  "TIFF_HEADER_PKB_FLOAT32_GRAY" ;
             memcpy ( data, TiffHeader::TIFF_HEADER_PKB_FLOAT32_GRAY, header_size );
         }
         break;

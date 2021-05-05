@@ -46,7 +46,7 @@
 #ifndef BOUNDINGBOX_H
 #define BOUNDINGBOX_H
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include <proj_api.h>
 #include <sstream>
 
@@ -102,7 +102,7 @@ public:
             // Initialisation du système de projection source
             int err = pj_ctx_get_errno ( ctx );
             char *msg = pj_strerrno ( err );
-            LOGGER_ERROR ( "erreur d initialisation " << from_srs << " " << msg );
+            BOOST_LOG_TRIVIAL(error) <<  "erreur d initialisation " << from_srs << " " << msg ;
             pj_ctx_free ( ctx );
             pthread_mutex_unlock ( & mutex_proj );
             return false;
@@ -111,7 +111,7 @@ public:
             // Initialisation du système de projection destination
             int err = pj_ctx_get_errno ( ctx );
             char *msg = pj_strerrno ( err );
-            LOGGER_ERROR ( "erreur d initialisation " << to_srs << " " << msg );
+            BOOST_LOG_TRIVIAL(error) <<  "erreur d initialisation " << to_srs << " " << msg ;
             pj_free ( pj_src );
             pj_ctx_free ( ctx );
             pthread_mutex_unlock ( & mutex_proj );
@@ -168,13 +168,13 @@ public:
         int code = pj_transform ( pj_src, pj_dst, nbSegment*4, 0, segX, segY, 0 );
 
         if ( code != 0 ) {
-            LOGGER_ERROR ( "Code erreur proj4 : " << code );
+            BOOST_LOG_TRIVIAL(error) <<  "Code erreur proj4 : " << code ;
             return 1;
         }
 
         for ( int i = 0; i < nbSegment*4; i++ ) {
             if ( segX[i] == HUGE_VAL || segY[i] == HUGE_VAL ) {
-                LOGGER_ERROR ( "Valeurs retournees par pj_transform invalides" );
+                BOOST_LOG_TRIVIAL(error) <<  "Valeurs retournees par pj_transform invalides" ;
                 return 1;
             }
         }
@@ -204,7 +204,7 @@ public:
      ** \~english \brief Bounding box description output
      */
     void print() {
-        LOGGER_DEBUG ( "BBOX = " << xmin << " " << ymin << " " << xmax << " " << ymax );
+        BOOST_LOG_TRIVIAL(debug) <<  "BBOX = " << xmin << " " << ymin << " " << xmax << " " << ymax ;
     }
 
     /** \~french \brief Conversion des informations sur le rectangle englobant en string
@@ -320,26 +320,26 @@ public:
 
         if (askBbox.containsInside(dataBbox)) {
             //les données sont a l'intérieur de la bbox demandée
-            LOGGER_DEBUG ( "les données sont a l'intérieur de la bbox demandée " );
+            BOOST_LOG_TRIVIAL(debug) <<  "les données sont a l'intérieur de la bbox demandée " ;
             return dataBbox;
 
         } else {
 
             if (dataBbox.containsInside(askBbox)) {
                 //la bbox demandée est plus petite que les données disponibles
-                LOGGER_DEBUG ("la bbox demandée est plus petite que les données disponibles");
+                BOOST_LOG_TRIVIAL(debug) << "la bbox demandée est plus petite que les données disponibles";
                 return askBbox;
 
             } else {
 
                 if (!dataBbox.intersects(askBbox)) {
                     //les deux ne s'intersectent pas donc on renvoit une image de nodata
-                    LOGGER_DEBUG ("les deux ne s'intersectent pas");
+                    BOOST_LOG_TRIVIAL(debug) << "les deux ne s'intersectent pas";
                     return BoundingBox<T> (0,0,0,0);
 
                 } else {
                     //les deux s'intersectent
-                    LOGGER_DEBUG ("les deux bbox s'intersectent");
+                    BOOST_LOG_TRIVIAL(debug) << "les deux bbox s'intersectent";
                     return askBbox.cutIntersectionWith(dataBbox);
                 }
 

@@ -52,7 +52,7 @@
 
 #include <map>
 #include <utility>
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Context.h"
 #include "FileContext.h"
 #include "CephPoolContext.h"

@@ -1,6 +1,7 @@
 #!/bin/bash
 TOOL="PBF2CACHE"
 echo "===== Test $TOOL ====="
+valgrind=$1
 
 SCRIPT=$(readlink -f "$0")
 BASEDIR=$(dirname "$SCRIPT")
@@ -13,7 +14,7 @@ errors=0
 while [ $i -lt $tests_nb ]; do
     let num=$i+1
     echo "Test $num/$tests_nb"
-    bash ${tests[$i]}
+    bash ${tests[$i]} $valgrind
     if [ $? != 0 ] ; then 
         let errors=$errors+1
         echo "    -> NOK"
