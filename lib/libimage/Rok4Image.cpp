@@ -331,6 +331,7 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingB
     } else {
         BOOST_LOG_TRIVIAL(error) <<  "Inconsistent TIFF tag " << tagEs ;
         BOOST_LOG_TRIVIAL(error) <<  "Unable to read sample format or extra samples for file " << name ;
+        delete sds;
         return NULL;
     }
     

@@ -343,6 +343,7 @@ int main ( int argc, char* argv[] ) {
 
     BOOST_LOG_TRIVIAL(debug) <<  "Clean" ;
     delete[] targetValue;
+    delete[] outputImage;
     delete[] newData;
     delete[] newNodata;
 

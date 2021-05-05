@@ -475,7 +475,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
             return -1;
         }
         pImage->setCRS ( crs );
-        delete paths.at(i);
+        free(paths.at(i));
 
         if ( i+1 < masks.size() && masks.at(i+1) ) {
             
@@ -491,7 +491,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
                 return -1;
             }
             i++;
-            delete paths.at(i);
+            free(paths.at(i));
         }
 
         pImageIn->push_back ( pImage );
@@ -565,7 +565,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
     }
 
     ( *ppImageOut )->setCRS ( outCrs );
-    delete paths.at(0);
+    free(paths.at(0));
 
     if ( firstInput == 2 ) {
 
@@ -580,7 +580,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         }
 
         ( *ppMaskOut )->setCRS ( outCrs );
-        delete paths.at(1);
+        free(paths.at(1));
     }
 
     if (debugLogger) ( *ppImageOut )->print();
@@ -1062,6 +1062,7 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
                     pOverlayedImages, nodata,0 );
 
     if ( *ppECIout == NULL ) {
+        for (int i = 0; i < pOverlayedImages.size(); i++) delete pOverlayedImages.at(i);
         BOOST_LOG_TRIVIAL(error) <<  "Cannot create final compounded image." ;
         return -1;
     }
@@ -1091,11 +1092,11 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
  */
 int main ( int argc, char **argv ) {
 
-    FileImage* pImageOut ;
+    FileImage* pImageOut = NULL;
     FileImage* pMaskOut = NULL;
     std::vector<FileImage*> ImageIn;
     std::vector<std::vector<Image*> > TabImageIn;
-    ExtendedCompoundImage* pECI;
+    ExtendedCompoundImage* pECI = NULL;
 
     /* Initialisation des Loggers */
     boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::info );
@@ -1124,12 +1125,18 @@ int main ( int argc, char **argv ) {
     BOOST_LOG_TRIVIAL(debug) <<  "Load" ;
     // Chargement des images
     if ( loadImages ( &pImageOut,&pMaskOut,&ImageIn ) < 0 ) {
+        if (pECI) delete pECI;
+        if (pImageOut) delete pImageOut;
+        if (pMaskOut) delete pMaskOut;
         error ( "Echec chargement des images",-1 );
     }
 
     BOOST_LOG_TRIVIAL(debug) <<  "Add converters" ;
     // Ajout des modules de conversion aux images en entrée
     if ( addConverters ( ImageIn ) < 0 ) {
+        if (pECI) delete pECI;
+        if (pImageOut) delete pImageOut;
+        if (pMaskOut) delete pMaskOut;
         error ( "Echec ajout des convertisseurs", -1 );
     }
 
@@ -1140,12 +1147,18 @@ int main ( int argc, char **argv ) {
 
     char* charValue = strtok ( strnodata,"," );
     if ( charValue == NULL ) {
+        if (pECI) delete pECI;
+        if (pImageOut) delete pImageOut;
+        if (pMaskOut) delete pMaskOut;
         error ( "Error with option -n : a value for nodata is missing",-1 );
     }
     nodata[0] = atoi ( charValue );
     for ( int i = 1; i < samplesperpixel; i++ ) {
         charValue = strtok ( NULL, "," );
         if ( charValue == NULL ) {
+            if (pECI) delete pECI;
+            if (pImageOut) delete pImageOut;
+            if (pMaskOut) delete pMaskOut;
             error ( "Error with option -n : one value per sample, separate with comma",-1 );
         }
         nodata[i] = atoi ( charValue );
@@ -1154,18 +1167,27 @@ int main ( int argc, char **argv ) {
     BOOST_LOG_TRIVIAL(debug) <<  "Sort" ;
     // Tri des images
     if ( sortImages ( ImageIn, &TabImageIn ) < 0 ) {
+        if (pECI) delete pECI;
+        if (pImageOut) delete pImageOut;
+        if (pMaskOut) delete pMaskOut;
         error ( "Echec tri des images",-1 );
     }
 
     BOOST_LOG_TRIVIAL(debug) <<  "Merge" ;
     // Fusion des paquets d images
     if ( mergeTabImages ( pImageOut, TabImageIn, &pECI, nodata ) < 0 ) {
+        if (pECI) delete pECI;
+        if (pImageOut) delete pImageOut;
+        if (pMaskOut) delete pMaskOut;
         error ( "Echec fusion des paquets d images",-1 );
     }
 
     BOOST_LOG_TRIVIAL(debug) <<  "Save image" ;
     // Enregistrement de l'image fusionnée
     if ( pImageOut->writeImage ( pECI ) < 0 ) {
+        if (pECI) delete pECI;
+        if (pImageOut) delete pImageOut;
+        if (pMaskOut) delete pMaskOut;
         error ( "Echec enregistrement de l image finale",-1 );
     }
 
@@ -1173,6 +1195,9 @@ int main ( int argc, char **argv ) {
         BOOST_LOG_TRIVIAL(debug) <<  "Save mask" ;
         // Enregistrement du masque fusionné, si demandé
         if ( pMaskOut->writeImage ( pECI->Image::getMask() ) < 0 ) {
+            if (pECI) delete pECI;
+            if (pImageOut) delete pImageOut;
+            if (pMaskOut) delete pMaskOut;
             error ( "Echec enregistrement du masque final",-1 );
         }
     }

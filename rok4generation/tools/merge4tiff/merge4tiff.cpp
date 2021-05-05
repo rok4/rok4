@@ -475,6 +475,7 @@ int checkImages ( FileImage* INPUTI[2][2], FileImage*& BGI, FileImage*& OUTPUTI,
             BOOST_LOG_TRIVIAL(error) <<  "Unable to open input image: " + std::string ( inputImages[i] ) ;
             return -1;
         }
+        INPUTI[i/2][i%2] = inputi;
 
         // Eventuelle masque associé
         FileImage* inputm = NULL;
@@ -491,9 +492,7 @@ int checkImages ( FileImage* INPUTI[2][2], FileImage*& BGI, FileImage*& OUTPUTI,
         if ( checkComponents ( inputi, inputm ) < 0 ) {
             BOOST_LOG_TRIVIAL(error) <<  "Unvalid components for the image " << std::string ( inputImages[i] ) << " (or its mask)" ;
             return -1;
-        }
-        
-        INPUTI[i/2][i%2] = inputi;
+        }  
     }
 
     BGI = NULL;
@@ -778,9 +777,10 @@ int merge ( FileImage* BGI, FileImage* INPUTI[2][2], FileImage* OUTPUTI, FileIma
  */
 int main ( int argc, char* argv[] ) {
     FileImage* INPUTI[2][2];
-    FileImage* BGI;
-    FileImage* OUTPUTI;
-    FileImage* OUTPUTM;
+    for ( int i = 0; i < 2; i++ ) for ( int j = 0; j < 2; j++ ) INPUTI[i][j] = NULL;
+    FileImage* BGI = NULL;
+    FileImage* OUTPUTI = NULL;
+    FileImage* OUTPUTM = NULL;
 
     /* Initialisation des Loggers */
     boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::info );
@@ -810,6 +810,13 @@ int main ( int argc, char* argv[] ) {
     BOOST_LOG_TRIVIAL(debug) <<  "Check images" ;
     // Controle des images
     if ( checkImages ( INPUTI, BGI, OUTPUTI, OUTPUTM ) < 0 ) {
+        if ( BGI ) delete BGI;
+
+        for ( int i = 0; i < 2; i++ ) for ( int j = 0; j < 2; j++ ) {
+            if ( INPUTI[i][j] ) {
+                delete INPUTI[i][j] ;
+            }
+        }
         error ( "Echec controle des images",-1 );
     }
 

@@ -236,6 +236,7 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
     imagesIn.resize(heightwiseImage);
     for (int row = 0; row < heightwiseImage; row++)
         imagesIn.at(row).resize(widthwiseImage);
+    for ( int i = 0; i < heightwiseImage; i++ ) for ( int j = 0; j < widthwiseImage; j++ ) imagesIn[i][j] = NULL;
 
     int width, height;
     int samplesperpixel, bitspersample;
@@ -315,6 +316,8 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
                  width != pImage->getWidth() ||
                  height != pImage->getHeight() )
             {
+                delete pImage;
+                for ( int ii = 0; ii < heightwiseImage; ii++ ) for ( int jj = 0; jj < widthwiseImage; jj++ ) delete imagesIn[ii][jj];
                 BOOST_LOG_TRIVIAL(error) <<  "All input images must have same dimensions and sample type : error for image " << filename ;
                 return -1;
             }
@@ -356,8 +359,8 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
  */
 int main ( int argc, char **argv ) {
 
-    FileImage* pImageOut ;
-    CompoundImage* pCompoundIn;
+    FileImage* pImageOut = NULL;
+    CompoundImage* pCompoundIn = NULL;
 
     /* Initialisation des Loggers */
     boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::info );
@@ -381,6 +384,12 @@ int main ( int argc, char **argv ) {
     BOOST_LOG_TRIVIAL(debug) <<  "Load" ;
     // Chargement des images
     if ( loadImages ( &pImageOut, &pCompoundIn ) < 0 ) {
+        if ( pCompoundIn ) {
+            delete pCompoundIn;
+        }
+        if ( pImageOut ) {
+            delete pImageOut; 
+        }
         error ( "Cannot load images from the input directory",-1 );
     }
 

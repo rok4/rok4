@@ -195,31 +195,37 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
     
     if ( TIFFGetField ( tif, TIFFTAG_IMAGEWIDTH, &width ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to read pixel width for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_IMAGELENGTH, &height ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to read pixel height for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_SAMPLESPERPIXEL,&channels ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to read number of samples per pixel for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_PLANARCONFIG,&planarconfig ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to read planar configuration for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( planarconfig != PLANARCONFIG_CONTIG && channels != 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Planar configuration have to be 'PLANARCONFIG_CONTIG' for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_BITSPERSAMPLE,&bitspersample ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to read number of bits per sample for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
@@ -234,27 +240,32 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
             sf = SAMPLEFORMAT_UINT;
         } else {
             BOOST_LOG_TRIVIAL(error) <<  "Unable to determine sample format from the number of bits per sample (" << bitspersample << ") for file " << filename ;
+            TIFFClose ( tif );
             return NULL;
         }
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_PHOTOMETRIC,&ph ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to read photometric for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
     
     if (toROK4Photometric ( ph ) == 0) {
         BOOST_LOG_TRIVIAL(error) <<  "Not handled photometric (PALETTE ?) for file " << filename ;
+        TIFFClose ( tif );
         return NULL;            
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_COMPRESSION,&comp ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to read compression for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_ROWSPERSTRIP,&rowsperstrip ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to read number of rows per strip for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
@@ -275,12 +286,14 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
     if ( ! LibtiffImage::canRead ( bitspersample, toROK4SampleFormat ( sf ) ) ) {
         BOOST_LOG_TRIVIAL(error) <<  "Not supported sample type : " << SampleFormat::toString ( toROK4SampleFormat ( sf ) ) << " and " << bitspersample << " bits per sample" ;
         BOOST_LOG_TRIVIAL(error) <<  "\t for the image to read : " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
             BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" ;
+            TIFFClose ( tif );
             return NULL;
         }
     } else {
@@ -350,16 +363,19 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
     // Ecriture de l'en-tête pour récupérer les informations sur l'image
     if ( TIFFSetField ( tif, TIFFTAG_IMAGEWIDTH, width ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to write pixel width for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_IMAGELENGTH, height ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to write pixel height for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_SAMPLESPERPIXEL,channels ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to write number of samples per pixel for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
@@ -367,48 +383,57 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         uint16_t extrasample = EXTRASAMPLE_UNASSALPHA;
         if ( TIFFSetField ( tif, TIFFTAG_EXTRASAMPLES,1,&extrasample ) < 1 ) {
             BOOST_LOG_TRIVIAL(error) <<  "Unable to write number of extra samples for file " << filename ;
+            TIFFClose ( tif );
             return NULL;
         }
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_PLANARCONFIG,PLANARCONFIG_CONTIG ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to write planar configuration for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_BITSPERSAMPLE, bitspersample ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to write number of bits per sample for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_SAMPLEFORMAT, fromROK4SampleFormat ( sampleformat ) ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to write sample format for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_PHOTOMETRIC, fromROK4Photometric ( photometric ) ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to write photometric for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_COMPRESSION, fromROK4Compression ( compression ) ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to write compression for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_ROWSPERSTRIP,rowsperstrip ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to write number of rows per strip for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE ) < 1 ) {
         BOOST_LOG_TRIVIAL(error) <<  "Unable to write pixel resolution unit for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
             BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and dimensions for image (to write)'" << filename << "' are not consistent" ;
+            TIFFClose ( tif );
             return NULL;
         }
     } else {

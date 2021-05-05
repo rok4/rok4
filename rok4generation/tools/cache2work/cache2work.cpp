@@ -255,6 +255,7 @@ int main ( int argc, char **argv )
     Rok4ImageFactory R4IF;
     Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0., context);
     if (rok4image == NULL) {
+        delete context;
         error (std::string("Cannot create ROK4 image to read ") + input, 1);
     }
 
