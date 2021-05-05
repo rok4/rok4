@@ -42,7 +42,7 @@
 
 
 LibProjet::LibProjet() {
-    message= std::string ( gettext ( "Hello World!" ) );
+    message= std::string ( "Hello World!" );
 }
 
 LibProjet::~LibProjet() {

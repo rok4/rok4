@@ -50,7 +50,6 @@ class ServerXML;
 #include "Style.h"
 
 #include "config.h"
-#include "intl.h"
 #include "Rok4Server.h"
 
 #if BUILD_OBJECT

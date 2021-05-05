@@ -37,8 +37,6 @@ endif(DEBUG_BUILD)
 #définition des fichiers sources
 configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 
-add_subdirectory(po)
-
 set(rok4core_SRCS  
     GetFeatureInfoEncoder.cpp MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp ConfLoader.cpp Layer.cpp Level.cpp 
     Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp 

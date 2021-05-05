@@ -57,7 +57,6 @@
 #include "Pyramid.h"
 #include "TileMatrixSet.h"
 #include "TileMatrix.h"
-#include "intl.h"
 #include "Context.h"
 
 #include <boost/log/core.hpp>
@@ -92,7 +91,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     ServerXML* serverXML = ConfLoader::buildServerConf(strServerConfigFile);
     if ( ! serverXML->isOk() ) {
-        std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
+        std::cerr<< "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " <<strServerConfigFile<<std::endl;
         return NULL;
     }
 
@@ -122,42 +121,42 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
             );
         }
 
-        std::cout<< _ ( "Envoi des messages dans la sortie du logger" ) << std::endl;
-        BOOST_LOG_TRIVIAL(info) <<  _ ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" ) ;
+        std::cout<<  "Envoi des messages dans la sortie du logger" << std::endl;
+        BOOST_LOG_TRIVIAL(info) <<   "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" ;
         loggerInitialised = true;
     } else {
-        BOOST_LOG_TRIVIAL(info) <<  _ ( "*** NOUVEAU CLIENT DU LOGGER ***" ) ;
+        BOOST_LOG_TRIVIAL(info) <<   "*** NOUVEAU CLIENT DU LOGGER ***" ;
     }
 
     // Construction des parametres de service
     ServicesXML* servicesXML = ConfLoader::buildServicesConf ( serverXML->getServicesConfigFile() );
     if ( ! servicesXML->isOk() ) {
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Impossible d'interpreter le fichier de conf " ) << serverXML->getServicesConfigFile() ;
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Extinction du serveur ROK4" ) ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Impossible d'interpreter le fichier de conf " << serverXML->getServicesConfigFile() ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
 
     // Chargement des TMS
     if ( ! ConfLoader::buildTMSList ( serverXML ) ) {
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Impossible de charger la conf des TileMatrix" ) ;
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Extinction du serveur ROK4" ) ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Impossible de charger la conf des TileMatrix" ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
 
     //Chargement des styles
     if ( ! ConfLoader::buildStylesList ( serverXML, servicesXML ) ) {
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Impossible de charger la conf des Styles" ) ;
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Extinction du serveur ROK4" ) ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Impossible de charger la conf des Styles" ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
 
     // Chargement des layers
     if ( ! ConfLoader::buildLayersList ( serverXML, servicesXML ) ) {
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Impossible de charger la conf des Layers/pyramides" ) ;
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Extinction du serveur ROK4" ) ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Impossible de charger la conf des Layers/pyramides" ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
@@ -178,7 +177,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
 
     ServerXML* newServerXML = ConfLoader::buildServerConf(strServerConfigFile);
     if ( ! newServerXML->isOk() ) {
-        std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
+        std::cerr<< "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " <<strServerConfigFile<<std::endl;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
@@ -200,8 +199,8 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
     // Construction des parametres de service
     ServicesXML* newServicesXML = ConfLoader::buildServicesConf ( newServerXML->getServicesConfigFile() );
     if ( ! newServicesXML->isOk() ) {
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Impossible d'interpreter le fichier de conf " ) << newServerXML->getServicesConfigFile() ;
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Extinction du serveur ROK4" ) ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Impossible d'interpreter le fichier de conf " << newServerXML->getServicesConfigFile() ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
@@ -222,8 +221,8 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
         BOOST_LOG_TRIVIAL(debug) << "Rechargement complet du nouveau dossier" << newServerXML->getTmsDir();
 
         if ( ! ConfLoader::buildTMSList ( newServerXML ) ) {
-            BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Impossible de charger la conf des TileMatrix" ) ;
-            BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Extinction du serveur ROK4" ) ;
+            BOOST_LOG_TRIVIAL(fatal) <<   "Impossible de charger la conf des TileMatrix" ;
+            BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
@@ -297,8 +296,8 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
         BOOST_LOG_TRIVIAL(debug) << "Rechargement complet du nouveau dossier" << newServerXML->getStylesDir();
 
         if ( ! ConfLoader::buildStylesList ( newServerXML, newServicesXML ) ) {
-            BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Impossible de charger la conf des styles" ) ;
-            BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Extinction du serveur ROK4" ) ;
+            BOOST_LOG_TRIVIAL(fatal) <<   "Impossible de charger la conf des styles" ;
+            BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
@@ -373,8 +372,8 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
         BOOST_LOG_TRIVIAL(debug) << "Rechargement complet du nouveau dossier" << newServerXML->getLayersDir();
 
         if ( ! ConfLoader::buildLayersList ( newServerXML, newServicesXML ) ) {
-            BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Impossible de charger la conf des Layers" ) ;
-            BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Extinction du serveur ROK4" ) ;
+            BOOST_LOG_TRIVIAL(fatal) <<   "Impossible de charger la conf des Layers" ;
+            BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
@@ -477,7 +476,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
 */
 
 void rok4KillServer ( Rok4Server* server ) {
-    BOOST_LOG_TRIVIAL(info) <<  _ ( "Extinction du serveur ROK4" ) ;
+    BOOST_LOG_TRIVIAL(info) <<   "Extinction du serveur ROK4" ;
 
     //Clear proj4 cache
     pj_clear_initcache();

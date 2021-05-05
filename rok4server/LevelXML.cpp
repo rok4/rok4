@@ -67,7 +67,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
     TiXmlHandle hLvl ( levelElement );
     TiXmlElement* pElem = hLvl.FirstChild ( "tileMatrix" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " level " ) <<_ ( "id" ) <<_ ( " sans tileMatrix!!" ) ;
+        BOOST_LOG_TRIVIAL(error) <<  filePath << " level " << "id" << " sans tileMatrix!!" ;
         return;
     }
     id  = std::string( pElem->GetText() );
@@ -75,7 +75,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
     TileMatrixSet* tms = pyr->getTMS();
     tm = tms->getTm(id);
     if ( tm == NULL ) {
-        BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Le level " ) << id <<_ ( " ref. Le TM [" ) << id << _ ( "] qui n'appartient pas au TMS [" ) << tms->getId() << "]" ;
+        BOOST_LOG_TRIVIAL(error) <<  filePath << " Le level " << id << " ref. Le TM [" << id <<  "] qui n'appartient pas au TMS [" << tms->getId() << "]" ;
         return;
     }
 
@@ -101,7 +101,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
         }
 
         if ( !sscanf ( pElem->GetText(),"%d",&pathDepth ) ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id <<_ ( ": pathDepth=[" ) << pElem->GetText() <<_ ( "] is not an integer." ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id << ": pathDepth=[" << pElem->GetText() << "] is not an integer." ;
             return;
         }
 
@@ -336,11 +336,11 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
         // Nom de l'attribut
         TiXmlElement *pElemTable = hElem.FirstChild ( "name" ).Element();
         if ( !pElemTable ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": table without name !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": table without name !!" ;
             return;
         }
         if ( !pElemTable->GetText() ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": table with empty name !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": table with empty name !!" ;
             return;
         }
         std::string tableName  = std::string( pElemTable->GetText() );
@@ -348,11 +348,11 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
         // Type de géométrie
         pElemTable = hElem.FirstChild ( "geometry" ).Element();
         if ( !pElemTable ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": table without geometry !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": table without geometry !!" ;
             return;
         }
         if ( !pElemTable->GetText() ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": table with empty geometry !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": table with empty geometry !!" ;
             return;
         }
         std::string geometry  = std::string( pElemTable->GetText() );
@@ -365,11 +365,11 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
             // Nom de l'attribut
             TiXmlElement *pElemAtt = hElemTable.FirstChild ( "name" ).Element();
             if ( !pElemAtt ) {
-                BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": attribute without name !!" ) ;
+                BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": attribute without name !!" ;
                 return;
             }
             if ( !pElemAtt->GetText() ) {
-                BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": attribute with empty name !!" ) ;
+                BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": attribute with empty name !!" ;
                 return;
             }
 
@@ -378,11 +378,11 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
             // Type de l'attribut
             pElemAtt = hElemTable.FirstChild ( "type" ).Element();
             if ( !pElemAtt ) {
-                BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": attribute without type !!" ) ;
+                BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": attribute without type !!" ;
                 return;
             }
             if ( !pElemAtt->GetText() ) {
-                BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": attribute with empty type !!" ) ;
+                BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": attribute with empty type !!" ;
                 return;
             }
             std::string attType  = std::string( pElemAtt->GetText() );
@@ -390,11 +390,11 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
             // Count distinct de l'attribut
             pElemAtt = hElemTable.FirstChild ( "count" ).Element();
             if ( !pElemAtt ) {
-                BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": attribute without count !!" ) ;
+                BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": attribute without count !!" ;
                 return;
             }
             if ( !pElemAtt->GetText() ) {
-                BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": attribute with empty count !!" ) ;
+                BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": attribute with empty count !!" ;
                 return;
             }
             std::string attCount  = std::string( pElemAtt->GetText() );
@@ -434,11 +434,11 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
     if (! onDemand) {
         pElem = hLvl.FirstChild ( "tilesPerWidth" ).Element();
         if ( !pElem || ! ( pElem->GetText() ) ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerWidth !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": Pas de tilesPerWidth !!" ;
             return;
         }
         if ( !sscanf ( pElem->GetText(),"%d",&tilesPerWidth ) ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id <<_ ( ": tilesPerWidth=[" ) << pElem->GetText() <<_ ( "] is not an integer." ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id << ": tilesPerWidth=[" << pElem->GetText() << "] is not an integer." ;
             return;
         }
         //----
@@ -446,16 +446,16 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
         //----TILEPERHEIGHT
         pElem = hLvl.FirstChild ( "tilesPerHeight" ).Element();
         if ( !pElem || ! ( pElem->GetText() ) ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerHeight !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": Pas de tilesPerHeight !!" ;
             return;
         }
         if ( !sscanf ( pElem->GetText(),"%d",&tilesPerHeight ) ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id <<_ ( ": tilesPerHeight=[" ) << pElem->GetText() <<_ ( "] is not an integer." ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id << ": tilesPerHeight=[" << pElem->GetText() << "] is not an integer." ;
             return;
         }
 
         if (tilesPerHeight == 0 || tilesPerWidth == 0) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id <<_ ( ": slab tiles size have to be non zero integers" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id << ": slab tiles size have to be non zero integers" ;
             return;
         }
     }
@@ -480,61 +480,61 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
         TiXmlElement* pElemTMSL = hTMSL.FirstChild ( "minTileRow" ).Element();
         long int intBuff = -1;
         if ( !pElemTMSL ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": no minTileRow in TMSLimits element !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": no minTileRow in TMSLimits element !!" ;
             return;
         }
         if ( !pElemTMSL->GetText() ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": minTileRow is empty !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": minTileRow is empty !!" ;
             return;
         }
         if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id <<_ ( ": minTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id << ": minTileRow=[" << pElemTMSL->GetText() << "] is not an integer." ;
             return;
         }
         minTileRow = intBuff;
         intBuff = -1;
         pElemTMSL = hTMSL.FirstChild ( "maxTileRow" ).Element();
         if ( !pElemTMSL ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": no maxTileRow in TMSLimits element !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": no maxTileRow in TMSLimits element !!" ;
             return;
         }
         if ( !pElemTMSL->GetText() ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id <<_ ( ": maxTileRow is empty !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id << ": maxTileRow is empty !!" ;
             return;
         }
         if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id <<_ ( ": maxTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id << ": maxTileRow=[" << pElemTMSL->GetText() << "] is not an integer." ;
             return;
         }
         maxTileRow = intBuff;
         intBuff = -1;
         pElemTMSL = hTMSL.FirstChild ( "minTileCol" ).Element();
         if ( !pElemTMSL ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( " Level " ) << id << _ ( ": no minTileCol in TMSLimits element !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   " Level " << id <<  ": no minTileCol in TMSLimits element !!" ;
             return;
         }
         if ( !pElemTMSL->GetText() ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": minTileCol is empty !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": minTileCol is empty !!" ;
             return;
         }
 
         if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id <<_ ( ": minTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id << ": minTileCol=[" << pElemTMSL->GetText() << "] is not an integer." ;
             return;
         }
         minTileCol = intBuff;
         intBuff = -1;
         pElemTMSL = hTMSL.FirstChild ( "maxTileCol" ).Element();
         if ( !pElemTMSL ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": no maxTileCol in TMSLimits element !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": no maxTileCol in TMSLimits element !!" ;
             return;
         }
         if ( !pElemTMSL->GetText() ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id << _ ( ": maxTileCol is empty !!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id <<  ": maxTileCol is empty !!" ;
             return;
         }
         if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-            BOOST_LOG_TRIVIAL(error) <<  filePath <<_ ( " Level " ) << id <<_ ( ": maxTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) ;
+            BOOST_LOG_TRIVIAL(error) <<  filePath << " Level " << id << ": maxTileCol=[" << pElemTMSL->GetText() << "] is not an integer." ;
             return;
         }
         maxTileCol = intBuff;

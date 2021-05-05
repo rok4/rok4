@@ -44,8 +44,7 @@
 #include <cstdlib>
 #include <algorithm>
 
-//#include "intl.h"
-
+//
 #include <cassert>
 // Pour déactiver tous les assert, décommenter la ligne suivante
 // #define NDEBUG

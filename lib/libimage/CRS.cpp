@@ -77,7 +77,6 @@ bool isCrsProj4Compatible ( std::string crs ) {
     if ( !pj ) {
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
-        // BOOST_LOG_TRIVIAL(debug) << _("erreur d initialisation ") << crs << " " << msg;
         pj_ctx_free ( ctx );
         return false;
     }
@@ -101,7 +100,6 @@ bool isCrsLongLat ( std::string crs ) {
     if ( !pj ) {
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
-        // BOOST_LOG_TRIVIAL(debug) << _("erreur d initialisation ") << crs << " " << msg;
         pj_ctx_free ( ctx );
         return false;
     }
@@ -144,13 +142,10 @@ void CRS::fetchDefinitionArea() {
     if ( !pj ) {
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
-        // BOOST_LOG_TRIVIAL(debug) << _("erreur d initialisation ") << crs << " " << msg;
         pj_ctx_free ( ctx );
         return;
     }
     pj_get_def_area ( pj, & ( definitionArea.xmin ), & ( definitionArea.ymin ), & ( definitionArea.xmax ), & ( definitionArea.ymax ) );
-    //BOOST_LOG_TRIVIAL(debug) << proj4Code;
-    //definitionArea.print();
     pj_free ( pj );
     pj_ctx_free ( ctx );
 }

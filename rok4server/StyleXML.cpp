@@ -45,11 +45,11 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 
     TiXmlDocument doc ( filePath.c_str() );
     if ( !doc.LoadFile() ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "                Ne peut pas charger le fichier " )  << filePath ;
+        BOOST_LOG_TRIVIAL(error) <<   "                Ne peut pas charger le fichier "  << filePath ;
         return;
     }
 
-    BOOST_LOG_TRIVIAL(info) <<  _ ( "     Ajout du Style " ) << filePath ;
+    BOOST_LOG_TRIVIAL(info) <<   "     Ajout du Style " << filePath ;
 
 
     /********************** ID = nom du fichier sans extension */
@@ -80,23 +80,23 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
-        BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( "            Impossible de recuperer la racine." ) ;
+        BOOST_LOG_TRIVIAL(error) <<  filePath <<  "            Impossible de recuperer la racine." ;
         return;
     }
     if ( strcmp ( pElem->Value(),"style" ) ) {
-        BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( "            La racine n'est pas un style." ) ;
+        BOOST_LOG_TRIVIAL(error) <<  filePath <<  "            La racine n'est pas un style." ;
         return;
     }
     hRoot=TiXmlHandle ( pElem );
 
     pElem=hRoot.FirstChild ( "Identifier" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Style " ) << filePath <<_ ( " pas de d'identifiant!!" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Style " << filePath << " pas de d'identifiant!!" ;
         return;
     }
     identifier = DocumentXML::getTextStrFromElem(pElem);
     if ( Request::containForbiddenChars(identifier) ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Style " ) << filePath <<_ ( " : l'identifiant contient des caracteres interdits" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Style " << filePath << " : l'identifiant contient des caracteres interdits" ;
         return;
     }
 
@@ -109,7 +109,7 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
     }
 
     if ( titles.size() ==0 ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucun Title trouve dans le Style" ) << id <<_ ( " : il est invalide!!" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Aucun Title trouve dans le Style" << id << " : il est invalide!!" ;
         return;
     }
 
@@ -122,7 +122,7 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
     }
 
     if ( abstracts.size() == 0 && inspire ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucun Abstract trouve dans le Style" ) << id <<_ ( " : il est invalide au sens INSPIRE!!" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Aucun Abstract trouve dans le Style" << id << " : il est invalide au sens INSPIRE!!" ;
         return;
     }
 
@@ -147,36 +147,36 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
         double maxScaleDenominator=0.0;
 
         if ( pElem->QueryStringAttribute ( "format",&format ) != TIXML_SUCCESS ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucun format trouve dans le LegendURL du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Aucun format trouve dans le LegendURL du Style " << id << " : il est invalide!!" ;
             continue;
         }
 
         if ( pElem->QueryStringAttribute ( "xlink:href",&href ) != TIXML_SUCCESS ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucun href trouve dans le LegendURL du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Aucun href trouve dans le LegendURL du Style " << id << " : il est invalide!!" ;
             continue;
         }
 
         errorCode = pElem->QueryIntAttribute ( "width",&width );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "L'attribut width doit etre un entier dans le Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "L'attribut width doit etre un entier dans le Style " << id << " : il est invalide!!" ;
             continue;
         }
 
         errorCode = pElem->QueryIntAttribute ( "height",&height );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "L'attribut height doit etre un entier dans le Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "L'attribut height doit etre un entier dans le Style " << id << " : il est invalide!!" ;
             continue;
         }
 
         errorCode = pElem->QueryDoubleAttribute ( "minScaleDenominator",&minScaleDenominator );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "L'attribut minScaleDenominator doit etre un double dans le Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "L'attribut minScaleDenominator doit etre un double dans le Style " << id << " : il est invalide!!" ;
             continue;
         }
 
         errorCode = pElem->QueryDoubleAttribute ( "maxScaleDenominator",&maxScaleDenominator );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "L'attribut maxScaleDenominator doit etre un double dans le Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "L'attribut maxScaleDenominator doit etre un double dans le Style " << id << " : il est invalide!!" ;
             continue;
         }
 
@@ -184,7 +184,7 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
     }
 
     if ( legendURLs.size() ==0 && inspire ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucun legendURL trouve dans le Style " ) << id <<_ ( " : il est invalide au sens INSPIRE!!" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Aucun legendURL trouve dans le Style " << id << " : il est invalide au sens INSPIRE!!" ;
         return;
     }
 
@@ -197,83 +197,83 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 
         errorCode = pElem->QueryStringAttribute ( "rgbContinuous",&continuousStr );
         if ( errorCode != TIXML_SUCCESS ) {
-            BOOST_LOG_TRIVIAL(debug) <<  _ ( "L'attribut rgbContinuous n'a pas ete trouve dans la palette du Style " ) << id <<_ ( " : Faux par defaut" ) ;
+            BOOST_LOG_TRIVIAL(debug) <<   "L'attribut rgbContinuous n'a pas ete trouve dans la palette du Style " << id << " : Faux par defaut" ;
         } else {
             if ( continuousStr.compare ( "true" ) ==0 ) rgbContinuous=true;
         }
 
         errorCode = pElem->QueryStringAttribute ( "alphaContinuous",&continuousStr );
         if ( errorCode != TIXML_SUCCESS ) {
-            BOOST_LOG_TRIVIAL(debug) <<  _ ( "L'attribut alphaContinuous n'a pas ete trouve dans la palette du Style " ) << id <<_ ( " : Faux par defaut" ) ;
+            BOOST_LOG_TRIVIAL(debug) <<   "L'attribut alphaContinuous n'a pas ete trouve dans la palette du Style " << id << " : Faux par defaut" ;
         } else {
             if ( continuousStr.compare ( "true" ) ==0 ) alphaContinuous=true;
         }
         
         errorCode = pElem->QueryStringAttribute ( "noAlpha",&continuousStr );
         if ( errorCode != TIXML_SUCCESS ) {
-            BOOST_LOG_TRIVIAL(debug) <<  _ ( "L'attribut noAlpha n'a pas ete trouve dans la palette du Style " ) << id <<_ ( " : Faux par defaut" ) ;
+            BOOST_LOG_TRIVIAL(debug) <<   "L'attribut noAlpha n'a pas ete trouve dans la palette du Style " << id << " : Faux par defaut" ;
         } else {
             if ( continuousStr.compare ( "true" ) ==0 ) noAlpha=true;
         }
 
         errorCode = pElem->QueryDoubleAttribute ( "maxValue",&maxValue );
         if ( errorCode != TIXML_SUCCESS ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "L'attribut maxValue n'a pas ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "L'attribut maxValue n'a pas ete trouve dans la palette du Style " << id << " : il est invalide!!" ;
             return;
         } else {
-            BOOST_LOG_TRIVIAL(debug) <<  _ ( "MaxValue " ) << maxValue ;
+            BOOST_LOG_TRIVIAL(debug) <<   "MaxValue " << maxValue ;
 
             double value=0;
             uint8_t r=0,g=0,b=0;
             int a=0;
 
             for ( pElem=hRoot.FirstChild ( "palette" ).FirstChild ( "colour" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "colour" ) ) {
-                BOOST_LOG_TRIVIAL(debug) <<  _ ( "Value avant Couleur" ) << value ;
+                BOOST_LOG_TRIVIAL(debug) <<   "Value avant Couleur" << value ;
                 errorCode = pElem->QueryDoubleAttribute ( "value",&value );
                 if ( errorCode == TIXML_WRONG_TYPE ) {
-                    BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut value invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+                    BOOST_LOG_TRIVIAL(error) <<   "Un attribut value invalide a ete trouve dans la palette du Style " << id << " : il est invalide!!" ;
                     continue;
                 } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
                     value=0;
                 }
-                BOOST_LOG_TRIVIAL(debug) <<  _ ( "Couleur de la valeur " ) << value ;
+                BOOST_LOG_TRIVIAL(debug) <<   "Couleur de la valeur " << value ;
                 TiXmlHandle cHdl ( pElem );
                 TiXmlElement* colourElem;
 
             //Red
                 colourElem = cHdl.FirstChild ( "red" ).Element();
                 if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
-                    BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+                    BOOST_LOG_TRIVIAL(error) <<   "Un attribut colour invalide a ete trouve dans la palette du Style " << id << " : il est invalide!!" ;
                     continue;
                 }
                 r = atoi ( colourElem->GetText() );
                 if ( r < 0 || r > 255 ) {
-                    BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+                    BOOST_LOG_TRIVIAL(error) <<   "Un attribut colour invalide a ete trouve dans la palette du Style " << id << " : il est invalide!!" ;
                     continue;
                 }
 
             //Green
                 colourElem = cHdl.FirstChild ( "green" ).Element();
                 if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
-                    BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+                    BOOST_LOG_TRIVIAL(error) <<   "Un attribut colour invalide a ete trouve dans la palette du Style " << id << " : il est invalide!!" ;
                     continue;
                 }
 
                 g = atoi ( colourElem->GetText() );
                 if ( g < 0 || g > 255 ) {
-                    BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+                    BOOST_LOG_TRIVIAL(error) <<   "Un attribut colour invalide a ete trouve dans la palette du Style " << id << " : il est invalide!!" ;
                     continue;
                 }
 
             //Blue
                 colourElem = cHdl.FirstChild ( "blue" ).Element();
                 if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
-                    BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+                    BOOST_LOG_TRIVIAL(error) <<   "Un attribut colour invalide a ete trouve dans la palette du Style " << id << " : il est invalide!!" ;
                     continue;
                 }
                 b = atoi ( colourElem->GetText() );
                 if ( b < 0 || b > 255 ) {
-                    BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+                    BOOST_LOG_TRIVIAL(error) <<   "Un attribut colour invalide a ete trouve dans la palette du Style " << id << " : il est invalide!!" ;
                     continue;
                 }
 
@@ -284,12 +284,12 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
                 } else {
                     a = atoi ( colourElem->GetText() );
                 }
-                BOOST_LOG_TRIVIAL(debug) <<  _ ( "Style : " ) << id <<_ ( " Couleur XML de " ) <<value<<" = " <<r<<","<<g<<","<<b<<","<<a ;
+                BOOST_LOG_TRIVIAL(debug) <<   "Style : " << id << " Couleur XML de " <<value<<" = " <<r<<","<<g<<","<<b<<","<<a ;
                 colourMap.insert ( std::pair<double,Colour> ( value, Colour ( r,g,b,a ) ) );
             }
 
             if ( colourMap.size() == 0 ) {
-                BOOST_LOG_TRIVIAL(error) <<  _ ( "Palette sans Couleur " ) << id <<_ ( " : il est invalide!!" ) ;
+                BOOST_LOG_TRIVIAL(error) <<   "Palette sans Couleur " << id << " : il est invalide!!" ;
                 return;
             }
         }
@@ -303,7 +303,7 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 
         errorCode = pElem->QueryFloatAttribute ( "zenith",&zenith );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut zenith invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Un attribut zenith invalide a ete trouve dans l'estompage du Style " << id << " : il est invalide!!" ;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             BOOST_LOG_TRIVIAL(info) << "Pas de zenith defini, 45 par defaut";
         } else {
@@ -311,7 +311,7 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
         }
         errorCode = pElem->QueryFloatAttribute ( "azimuth",&azimuth );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut azimuth invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Un attribut azimuth invalide a ete trouve dans l'estompage du Style " << id << " : il est invalide!!" ;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             BOOST_LOG_TRIVIAL(info) << "Pas de azimuth defini, 315 par defaut";
         } else {
@@ -320,7 +320,7 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 
         errorCode = pElem->QueryFloatAttribute ( "zFactor",&zFactor );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut zFactor invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Un attribut zFactor invalide a ete trouve dans l'estompage du Style " << id << " : il est invalide!!" ;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             BOOST_LOG_TRIVIAL(info) << "Pas de zFactor defini, 1 par defaut";
         } else {
@@ -329,13 +329,13 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 
         errorCode = pElem->QueryStringAttribute("interpolation", &interOfEst);
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut interpolation invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Un attribut interpolation invalide a ete trouve dans l'estompage du Style " << id << " : il est invalide!!" ;
             return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             BOOST_LOG_TRIVIAL(info) << "Pas d'interpolation defini, 'linear' par defaut";
         } else {
              if (interOfEst != "linear" && interOfEst != "cubic" && interOfEst != "nn" && interOfEst != "lanczos") {
-                BOOST_LOG_TRIVIAL(error) << _ ("Un attribut interpolation invalide a ete trouve dans l'estompage du Style " ) << id << ", les valeurs possibles sont 'nn','linear','cubic' et 'lanczos'";
+                BOOST_LOG_TRIVIAL(error) <<  "Un attribut interpolation invalide a ete trouve dans l'estompage du Style " << id << ", les valeurs possibles sont 'nn','linear','cubic' et 'lanczos'";
                 return;
             } else {
                  estompage.setInterpolation(interOfEst);
@@ -355,13 +355,13 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
         errorCode = pElem->QueryStringAttribute("algo", &algo);
         
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut algo invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Un attribut algo invalide a ete trouve dans la pente du Style " << id << " : il est invalide!!" ;
             return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             BOOST_LOG_TRIVIAL(info) << "Pas d'algo defini, H par defaut";
         } else {
             if (algo != "H" && algo != "Z") {
-                BOOST_LOG_TRIVIAL(error) << _ ("Un attribut algo invalide a ete trouve dans la pente du Style " ) << id << ", la valeur possible est H";
+                BOOST_LOG_TRIVIAL(error) <<  "Un attribut algo invalide a ete trouve dans la pente du Style " << id << ", la valeur possible est H";
                 return;
             }
             pente.setAlgo(algo);
@@ -370,13 +370,13 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 
         errorCode = pElem->QueryStringAttribute("unit", &unit);
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut unit invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Un attribut unit invalide a ete trouve dans la pente du Style " << id << " : il est invalide!!" ;
             return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             BOOST_LOG_TRIVIAL(info) << "Pas d'unit defini, 'degree' par defaut";
         } else {
              if (unit != "degree" && unit != "pourcent") {
-                BOOST_LOG_TRIVIAL(error) << _ ("Un attribut unit invalide a ete trouve dans la pente du Style " ) << id << ", la valeur possible est 'degree' or 'pourcent'";
+                BOOST_LOG_TRIVIAL(error) <<  "Un attribut unit invalide a ete trouve dans la pente du Style " << id << ", la valeur possible est 'degree' or 'pourcent'";
                 return;
             }
             pente.setUnit(unit);
@@ -385,13 +385,13 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 
         errorCode = pElem->QueryStringAttribute("interpolation", &inter);
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut interpolation invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Un attribut interpolation invalide a ete trouve dans la pente du Style " << id << " : il est invalide!!" ;
             return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             BOOST_LOG_TRIVIAL(info) << "Pas d'interpolation defini, 'linear' par defaut";
         } else {
              if (inter != "linear" && inter != "cubic" && inter != "nn" && inter != "lanczos") {
-                BOOST_LOG_TRIVIAL(error) << _ ("Un attribut interpolation invalide a ete trouve dans la pente du Style " ) << id << ", les valeurs possibles sont 'nn','linear','cubic' et 'lanczos'";
+                BOOST_LOG_TRIVIAL(error) <<  "Un attribut interpolation invalide a ete trouve dans la pente du Style " << id << ", les valeurs possibles sont 'nn','linear','cubic' et 'lanczos'";
                 return;
             }
             pente.setInterpolation(inter);
@@ -400,13 +400,13 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 
         errorCode = pElem->QueryIntAttribute("slopeNoData", &ndslope);
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut slopeNoData invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Un attribut slopeNoData invalide a ete trouve dans la pente du Style " << id << " : il est invalide!!" ;
             return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             BOOST_LOG_TRIVIAL(info) << "Pas de slopeNoData defini, '0' par defaut";
         } else {
              if (ndslope < 0 || ndslope > 255) {
-                BOOST_LOG_TRIVIAL(error) << _ ("Un attribut ndslope invalide a ete trouve dans la pente du Style " ) << id << ", les valeurs possibles sont entre 0 et 255";
+                BOOST_LOG_TRIVIAL(error) <<  "Un attribut ndslope invalide a ete trouve dans la pente du Style " << id << ", les valeurs possibles sont entre 0 et 255";
                 return;
             }
             pente.setSlopeNoData(ndslope);
@@ -415,7 +415,7 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 
         errorCode = pElem->QueryFloatAttribute("imageNoData", &ndimg);
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut imageNoData invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Un attribut imageNoData invalide a ete trouve dans la pente du Style " << id << " : il est invalide!!" ;
             return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             BOOST_LOG_TRIVIAL(info) << "Pas de imageNoData defini, '-99999' par defaut";
@@ -425,7 +425,7 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 
         errorCode = pElem->QueryIntAttribute("maxSlope", &mxSlope);
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut maxSlope invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Un attribut maxSlope invalide a ete trouve dans la pente du Style " << id << " : il est invalide!!" ;
             return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             if (unit == "degree") {
@@ -437,7 +437,7 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
             }
         } else {
              if (mxSlope < 0 || mxSlope > 255) {
-                BOOST_LOG_TRIVIAL(error) << _ ("Un attribut maxSlope invalide a ete trouve dans la pente du Style " ) << id << ", les valeurs possibles sont entre 0 et 255";
+                BOOST_LOG_TRIVIAL(error) <<  "Un attribut maxSlope invalide a ete trouve dans la pente du Style " << id << ", les valeurs possibles sont entre 0 et 255";
                 return;
             }
             pente.setMaxSlope(mxSlope);
@@ -454,14 +454,14 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
         errorCode = pElem->QueryStringAttribute("algo", &algo);
         
          if ( errorCode == TIXML_WRONG_TYPE ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Un attribut algo invalide a ete trouve dans l'exposition du Style " ) << id <<_ ( " : il est invalide!!" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Un attribut algo invalide a ete trouve dans l'exposition du Style " << id << " : il est invalide!!" ;
             return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             BOOST_LOG_TRIVIAL(info) << "Pas d'algo defini, 'H' par defaut";
             algo = "H";
         } else {
             if (algo != "H") {
-                BOOST_LOG_TRIVIAL(error) << _ ("Un attribut algo invalide a ete trouve dans l'exposition du Style " ) << id << ", la valeur possible est H";
+                BOOST_LOG_TRIVIAL(error) <<  "Un attribut algo invalide a ete trouve dans l'exposition du Style " << id << ", la valeur possible est H";
                 return;
             }
         }

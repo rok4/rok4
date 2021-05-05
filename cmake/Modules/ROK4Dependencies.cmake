@@ -259,11 +259,5 @@ if(NOT TARGET image)
   endif(IMAGE_FOUND)
 endif(NOT TARGET image)
 
-#Gettext Support
-
-set(GettextTranslate_ALL FALSE)
-set(GettextTranslate_GMO_BINARY TRUE)
-include(GettextTranslate)
-
 set(ROK4DEPENDENCIES_FOUND TRUE BOOL)
 

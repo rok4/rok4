@@ -45,7 +45,6 @@
 
 #include "Style.h"
 #include <boost/log/trivial.hpp>
-#include "intl.h"
 #include "config.h"
 
 Style::Style ( const StyleXML& s ) {

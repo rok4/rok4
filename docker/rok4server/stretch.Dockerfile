@@ -13,7 +13,6 @@ RUN apt update && apt -y install  \
     libfcgi-dev \
     libtinyxml-dev \
     libopenjp2-7-dev \
-    gettext \
     zlib1g-dev \
     libtiff5-dev \
     libpng-dev \

@@ -78,7 +78,7 @@ ServicesXML* ConfLoader::buildServicesConf ( std::string servicesConfigFile ) {
 /**********************************************************************************************************/
 
 bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXML ) {
-    BOOST_LOG_TRIVIAL(info) <<  _ ( "CHARGEMENT DES STYLES" ) ;
+    BOOST_LOG_TRIVIAL(info) <<  "STYLES LOADING" ;
 
     // lister les fichier du repertoire styleDir
     std::vector<std::string> styleFiles;
@@ -87,7 +87,7 @@ bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXM
     struct dirent *fileEntry;
     DIR *dir;
     if ( ( dir = opendir ( styleDir.c_str() ) ) == NULL ) {
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Le repertoire des Styles " ) << styleDir << _ ( " n'est pas accessible." ) ;
+        BOOST_LOG_TRIVIAL(fatal) <<  "Styles' directory " << styleDir << " unreachable." ;
         return false;
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
@@ -101,7 +101,7 @@ bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXM
     if ( styleFiles.empty() ) {
         // FIXME:
         // Aucun Style presents.
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Aucun fichier *.stl dans le repertoire " ) << styleDir ;
+        BOOST_LOG_TRIVIAL(fatal) << "No .stl file in the directory" << styleDir ;
         return false;
     }
 
@@ -112,16 +112,16 @@ bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXM
         if ( style ) {
             serverXML->addStyle ( style );
         } else {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Ne peut charger le style: " ) << styleFiles[i] ;
+            BOOST_LOG_TRIVIAL(error) <<  "Cannot load style " << styleFiles[i] ;
         }
     }
 
     if ( serverXML->getNbStyles() ==0 ) {
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Aucun Style n'a pu etre charge!" ) ;
+        BOOST_LOG_TRIVIAL(fatal) << "No style loaded !" ;
         return false;
     }
 
-    BOOST_LOG_TRIVIAL(info) <<  _ ( "NOMBRE DE STYLES CHARGES : " ) << serverXML->getNbStyles() ;
+    BOOST_LOG_TRIVIAL(info) << serverXML->getNbStyles() << " style(s) loaded" ;
 
     return true;
 }
@@ -142,7 +142,7 @@ Style* ConfLoader::buildStyle ( std::string fileName, ServicesXML* servicesXML )
 /**********************************************************************************************************/
 
 bool ConfLoader::buildTMSList ( ServerXML* serverXML ) {
-    BOOST_LOG_TRIVIAL(info) <<  _ ( "CHARGEMENT DES TMS" ) ;
+    BOOST_LOG_TRIVIAL(info) << "TMS LOADING" ;
 
     // lister les fichier du repertoire tmsDir
     std::vector<std::string> tmsFiles;
@@ -151,7 +151,7 @@ bool ConfLoader::buildTMSList ( ServerXML* serverXML ) {
     struct dirent *fileEntry;
     DIR *dir;
     if ( ( dir = opendir ( tmsDir.c_str() ) ) == NULL ) {
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Le repertoire des TMS " ) << tmsDir << _ ( " n'est pas accessible." ) ;
+        BOOST_LOG_TRIVIAL(fatal) << "TMS directory " << tmsDir << " unreachable" ;
         return false;
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
@@ -163,11 +163,7 @@ bool ConfLoader::buildTMSList ( ServerXML* serverXML ) {
     closedir ( dir );
 
     if ( tmsFiles.empty() ) {
-        // FIXME:
-        // Aucun TMS presents. Ce n'est pas necessairement grave si le serveur
-        // ne sert pas pour le WMTS et qu'on exploite pas de cache tuile.
-        // Cependant pour le moment (07/2010) on ne gere que des caches tuiles
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Aucun fichier *.tms dans le repertoire " ) << tmsDir ;
+        BOOST_LOG_TRIVIAL(fatal) << "No .tms file in the directory " << tmsDir ;
         return false;
     }
 
@@ -178,16 +174,16 @@ bool ConfLoader::buildTMSList ( ServerXML* serverXML ) {
         if ( tms ) {
             serverXML->addTMS ( tms );
         } else {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Ne peut charger le tms: " ) << tmsFiles[i] ;
+            BOOST_LOG_TRIVIAL(error) << "Cannot lod TMS " << tmsFiles[i] ;
         }
     }
 
     if ( serverXML->getNbTMS() ==0 ) {
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Aucun TMS n'a pu etre charge!" ) ;
+        BOOST_LOG_TRIVIAL(fatal) << "No TMS loaded !" ;
         return false;
     }
 
-    BOOST_LOG_TRIVIAL(info) <<  _ ( "NOMBRE DE TMS CHARGES : " ) << serverXML->getNbTMS() ;
+    BOOST_LOG_TRIVIAL(info) << serverXML->getNbTMS() << " TMS loaded" ;
 
     return true;
 }
@@ -208,7 +204,7 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
 
 bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXML ) {
 
-    BOOST_LOG_TRIVIAL(info) <<  _ ( "CHARGEMENT DES LAYERS" ) ;
+    BOOST_LOG_TRIVIAL(info) << "LAYERS LOADING" ;
     // lister les fichier du repertoire layerDir
     std::vector<std::string> layerFiles;
     std::string layerDir = serverXML->getLayersDir();
@@ -216,7 +212,7 @@ bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXM
     struct dirent *fileEntry;
     DIR *dir;
     if ( ( dir = opendir ( layerDir.c_str() ) ) == NULL ) {
-        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Le repertoire " ) << layerDir << _ ( " n'est pas accessible." ) ;
+        BOOST_LOG_TRIVIAL(fatal) << "Layers' directory " << layerDir << " unreachable" ;
         return false;
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
@@ -228,9 +224,8 @@ bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXM
     closedir ( dir );
 
     if ( layerFiles.empty() ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucun fichier *.lay dans le repertoire " ) << layerDir ;
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Le serveur n'a aucune donnees à servir. Dommage..." ) ;
-        //return false;
+        BOOST_LOG_TRIVIAL(error) << "No .lay file in the directory " << layerDir ;
+        BOOST_LOG_TRIVIAL(error) << "Server has nothing to serve..." ;
     }
 
     // generer les Layers decrits par les fichiers.
@@ -240,16 +235,16 @@ bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXM
         if ( layer ) {
             serverXML->addLayer ( layer );
         } else {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Ne peut charger le layer: " ) << layerFiles[i] ;
+            BOOST_LOG_TRIVIAL(error) << "Cannot load layer " << layerFiles[i] ;
         }
     }
 
     if ( serverXML->getNbLayers() ==0 ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucun layer n'a pu etre charge!" ) ;
+        BOOST_LOG_TRIVIAL(error) << "No layer loaded !" ;
         //return false;
     }
 
-    BOOST_LOG_TRIVIAL(info) <<  _ ( "NOMBRE DE LAYERS CHARGES : " ) << serverXML->getNbLayers() ;
+    BOOST_LOG_TRIVIAL(info) << serverXML->getNbLayers() << " layer(s) loaded" ;
     return true;
 }
 
@@ -301,7 +296,7 @@ Pyramid* ConfLoader::buildBasedPyramid (
     if (! sFile || ! sTransparent || ! sStyle || ! sFile->GetText() || ! sTransparent->GetText() || ! sStyle->GetText()) {
         // Il manque un des trois elements necessaires pour initialiser une
         // nouvelle pyramide de base
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Source Pyramid: " ) << basedPyramidFilePath << _ ( " can't be loaded because information are missing" ) ;
+        BOOST_LOG_TRIVIAL(error) << "Source Pyramid: " << basedPyramidFilePath <<  " can't be loaded because information are missing" ;
         return NULL;
     }
 
@@ -321,7 +316,7 @@ Pyramid* ConfLoader::buildBasedPyramid (
     Pyramid* basedPyramid = buildPyramid ( basedPyramidFilePath, serverXML, servicesXML, false );
 
     if ( ! basedPyramid) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide source " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "La pyramide source " << basedPyramidFilePath <<  " ne peut etre chargee" ;
         return NULL;
     }
 
@@ -335,7 +330,7 @@ Pyramid* ConfLoader::buildBasedPyramid (
     // On teste le style et on ajoute le normal au pire
     Style* style = serverXML->getStyle(str_style);
     if ( style == NULL ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Style " ) << str_style << _ ( "non defini" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Style " << str_style << "undefined" ;
         style = serverXML->getStyle("normal");
     }
     basedPyramid->setStyle(style);
@@ -655,7 +650,7 @@ std::vector<std::string> ConfLoader::loadListEqualsCRS(){
     char namebuffer[100];
     strcpy(namebuffer, dirCRS);
     strcat(namebuffer, fileCRS);
-    BOOST_LOG_TRIVIAL(info) <<  _ ( "Construction de la liste des CRS equivalents depuis " ) << namebuffer ;
+    BOOST_LOG_TRIVIAL(info) <<   "Construction de la liste des CRS equivalents depuis " << namebuffer ;
     std::vector<std::string> rawStrVector = loadStringVectorFromFile(std::string(namebuffer));
     std::vector<std::string> strVector;
     // rawStrVector can cointains some unknowned CRS => filtering using Proj4
@@ -679,7 +674,7 @@ std::vector<std::string> ConfLoader::loadListEqualsCRS(){
             //is the new CRS compatible with Proj4 ?
             CRS crs ( crsstr );
             if ( !crs.isProj4Compatible() ) {
-                BOOST_LOG_TRIVIAL(warning) <<  _ ( "The Equivalent CRS [" ) << crsstr << _ ( "] is not present in Proj4" ) ;
+                BOOST_LOG_TRIVIAL(warning) <<   "The Equivalent CRS [" << crsstr <<  "] is not present in Proj4" ;
             } else {
                 targetLine.append( crsstr );
                 targetLine.append( " " );
@@ -701,7 +696,7 @@ std::vector<std::string> ConfLoader::loadStringVectorFromFile(std::string file){
     // We test if the stream is empty
     //   This can happen when the file can't be loaded or when the file is empty
     if ( input.peek() == std::ifstream::traits_type::eof() ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ("Ne peut pas charger le fichier ") << file << _ (" ou fichier vide")  ;
+        BOOST_LOG_TRIVIAL(error) <<   "Ne peut pas charger le fichier " << file <<  " ou fichier vide"  ;
     }
     
     for( std::string line; getline(input, line); ) {
@@ -746,7 +741,7 @@ std::vector<CRS> ConfLoader::getEqualsCRS(std::vector<std::string> listofequalsC
                     //is the new CRS compatible with Proj4 ?
                     CRS crs ( crsstr );
                     if ( !crs.isProj4Compatible() ) {
-                        BOOST_LOG_TRIVIAL(debug) <<  _ ( "The Equivalent CRS [" ) << crsstr << _ ( "] of [" ) << basecrs << _ ( "] is not present in Proj4" ) ;
+                        BOOST_LOG_TRIVIAL(debug) <<   "The Equivalent CRS [" << crsstr <<  "] of [" << basecrs <<  "] is not present in Proj4" ;
                     } else {
                         returnCRS.push_back( crs );
                     }

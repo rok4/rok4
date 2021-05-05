@@ -15,7 +15,6 @@ RUN yum -y --enablerepo=extras install \
         fcgi-devel \
         tinyxml-devel \
         openjpeg2-devel \
-        gettext \
         zlib-devel \
         libtiff-devel \
         libpng-devel \

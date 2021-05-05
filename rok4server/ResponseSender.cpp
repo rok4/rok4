@@ -51,7 +51,6 @@
 #include <stdio.h>
 #include <string.h> // pour strlen
 #include <sstream> // pour les stringstream
-#include "intl.h"
 #include "config.h"
 /**
  * \~french
@@ -111,17 +110,17 @@ std::string genFileName ( std::string mime ) {
  */
 void displayFCGIError ( int error ) {
     if ( error>0 )
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Code erreur : " ) << error; // Erreur errno(2) (Cf. manpage 
+        BOOST_LOG_TRIVIAL(error) <<   "Code erreur : " << error; // Erreur errno(2) (Cf. manpage 
     else if ( error==FCGX_UNSUPPORTED_VERSION )
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Version FCGI non supportee" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Version FCGI non supportee" ;
     else if ( error==FCGX_UNSUPPORTED_VERSION )
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Erreur de protocole" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Erreur de protocole" ;
     else if ( error==FCGX_CALL_SEQ_ERROR )
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Erreur de parametre" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Erreur de parametre" ;
     else if ( error==FCGX_UNSUPPORTED_VERSION )
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Preconditions non remplies" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Preconditions non remplies" ;
     else
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Erreur inconnue" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Erreur inconnue" ;
 }
 
 int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
@@ -157,7 +156,7 @@ int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
         // Taille ecrite dans le flux de sortie
         int w = FCGX_PutStr ( ( char* ) ( buffer + wr ), buffer_size,request->out );
         if ( w < 0 ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Echec d'ecriture dans le flux de sortie de la requete FCGI " ) << request->requestId ;
+            BOOST_LOG_TRIVIAL(error) <<   "Echec d'ecriture dans le flux de sortie de la requete FCGI " << request->requestId ;
             displayFCGIError ( FCGX_GetError ( request->out ) );
             delete source;
             //delete[] buffer;
@@ -166,7 +165,7 @@ int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
         wr += w;
     }
     delete source;
-    BOOST_LOG_TRIVIAL(debug) <<  _ ( "End of Response" ) ;
+    BOOST_LOG_TRIVIAL(debug) <<   "End of Response" ;
     return 0;
 }
 
@@ -207,7 +206,7 @@ int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
             // Taille ecrite dans le flux de sortie
             int w = FCGX_PutStr ( ( char* ) ( buffer + wr ), read_size,request->out );
             if ( w < 0 ) {
-                BOOST_LOG_TRIVIAL(error) <<  _ ( "Echec d'ecriture dans le flux de sortie de la requete FCGI " ) << request->requestId ;
+                BOOST_LOG_TRIVIAL(error) <<   "Echec d'ecriture dans le flux de sortie de la requete FCGI " << request->requestId ;
                 displayFCGIError ( FCGX_GetError ( request->out ) );
                 delete stream;
                 delete[] buffer;
@@ -216,7 +215,7 @@ int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
             wr += w;
         }
         if ( wr != read_size ) {
-            BOOST_LOG_TRIVIAL(debug) <<  _ ( "Nombre incorrect d'octets ecrits dans le flux de sortie" ) ;
+            BOOST_LOG_TRIVIAL(debug) <<   "Nombre incorrect d'octets ecrits dans le flux de sortie" ;
             delete stream;
             stream = 0;
             delete[] buffer;
@@ -231,6 +230,6 @@ int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
     if ( buffer ) {
         delete[] buffer;
     }
-    BOOST_LOG_TRIVIAL(debug) <<  _ ( "End of Response" ) ;
+    BOOST_LOG_TRIVIAL(debug) <<   "End of Response" ;
     return 0;
 }

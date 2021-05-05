@@ -48,12 +48,12 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
 
     TiXmlDocument doc ( filePath.c_str() );
     if ( !doc.LoadFile() ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Ne peut pas charger le fichier " ) << filePath ;
+        BOOST_LOG_TRIVIAL(error) <<   "Ne peut pas charger le fichier " << filePath ;
         return;
     }
 
-    BOOST_LOG_TRIVIAL(info) <<  _ ( "           Ajout de la pyramide : " ) << filePath ;
-    BOOST_LOG_TRIVIAL(info) <<  _ ( "           BaseDir Relative to : " ) << parentDir ;
+    BOOST_LOG_TRIVIAL(info) <<   "           Ajout de la pyramide : " << filePath ;
+    BOOST_LOG_TRIVIAL(info) <<   "           BaseDir Relative to : " << parentDir ;
 
 
     /********************** Default values */
@@ -70,11 +70,11 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
-        BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( " impossible de recuperer la racine." ) ;
+        BOOST_LOG_TRIVIAL(error) <<  filePath <<  " impossible de recuperer la racine." ;
         return;
     }
     if ( strcmp ( pElem->Value(),"Pyramid" ) ) {
-        BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( " La racine n'est pas une Pyramid." ) ;
+        BOOST_LOG_TRIVIAL(error) <<  filePath <<  " La racine n'est pas une Pyramid." ;
         return;
     }
     hRoot=TiXmlHandle ( pElem );
@@ -83,14 +83,14 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
     //----TMS
     pElem=hRoot.FirstChild ( "tileMatrixSet" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide [" ) << filePath <<_ ( "] n'a pas de TMS. C'est un probleme." ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "La pyramide [" << filePath << "] n'a pas de TMS. C'est un probleme." ;
         return;
     }
     std::string tmsName= DocumentXML::getTextStrFromElem(pElem);
 
     tms = serverXML->getTMS(tmsName);
     if ( tms == NULL ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide [" ) << filePath <<_ ( "] reference un TMS [" ) << tmsName <<_ ( "] qui n'existe pas." ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "La pyramide [" << filePath << "] reference un TMS [" << tmsName << "] qui n'existe pas." ;
         return;
     }
     //----
@@ -98,7 +98,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
     //----FORMAT
     pElem=hRoot.FirstChild ( "format" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide [" ) << filePath <<_ ( "] n'a pas de format." ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "La pyramide [" << filePath << "] n'a pas de format." ;
         return;
     }
     std::string formatStr= DocumentXML::getTextStrFromElem(pElem);
@@ -109,7 +109,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
 
     format = Rok4Format::fromString ( formatStr );
     if ( ! ( format ) ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ("Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Le format [" << formatStr << "] n'est pas gere." ;
         return;
     }
     //----
@@ -138,11 +138,11 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
         //----CHANNELS
         pElem=hRoot.FirstChild ( "channels" ).Element();
         if ( !pElem || ! ( pElem->GetText() ) ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide [" ) << filePath <<_ ( "] Pas de channels => channels = " ) << DEFAULT_CHANNELS ;
+            BOOST_LOG_TRIVIAL(error) <<   "La pyramide [" << filePath << "] Pas de channels => channels = " << DEFAULT_CHANNELS ;
             channels = DEFAULT_CHANNELS;
             return;
         } else if ( !sscanf ( pElem->GetText(),"%d",&channels ) ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide [" ) << filePath <<_ ( "] : channels=[" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] is not an integer." ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "La pyramide [" << filePath << "] : channels=[" << DocumentXML::getTextStrFromElem(pElem) << "] is not an integer." ;
             return;
         }
         //----
@@ -202,7 +202,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
         //on va vérifier que le level qu'on vient de charger n'a pas déjà été chargé
         std::map<std::string, Level*>::iterator it= levels.find ( levXML->getId() );
         if ( it != levels.end() ) {
-            BOOST_LOG_TRIVIAL(error) <<  _ ( "Level: " ) << levXML->getId() << _ ( " has already been loaded" ) ;
+            BOOST_LOG_TRIVIAL(error) <<   "Level: " << levXML->getId() <<  " has already been loaded" ;
             delete levXML;
             return ;
         }
@@ -217,7 +217,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
     } //if level
 
     if ( levels.size() == 0 ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucun level n'a pu etre charge pour la pyramide " ) << filePath ;
+        BOOST_LOG_TRIVIAL(error) <<   "Aucun level n'a pu etre charge pour la pyramide " << filePath ;
         return;
     }
 

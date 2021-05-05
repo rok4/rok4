@@ -54,7 +54,6 @@
 #include "FileContext.h"
 #include "PaletteDataSource.h"
 #include "Format.h"
-#include "intl.h"
 #include "config.h"
 #include <cstddef>
 #include <sys/stat.h>
@@ -244,7 +243,7 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
 
     Image* image = getwindow ( servicesConf, bbox_int, error );
     if ( !image ) {
-        BOOST_LOG_TRIVIAL(debug) <<  _ ( "Image invalid !" ) ;
+        BOOST_LOG_TRIVIAL(debug) <<   "Image invalid !" ;
         return 0;
     }
 
@@ -296,13 +295,13 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
 
     Image* imageout = getwindow ( servicesConf, bbox_int, error );
     if ( !imageout ) {
-        BOOST_LOG_TRIVIAL(debug) <<  _ ( "Image invalid !" ) ;
+        BOOST_LOG_TRIVIAL(debug) <<   "Image invalid !" ;
         return 0;
     }
 
     // On affecte la bonne bbox à l'image source afin que la classe de réechantillonnage calcule les bonnes valeurs d'offset
     if (! imageout->setDimensions ( bbox_int.xmax - bbox_int.xmin, bbox_int.ymax - bbox_int.ymin, BoundingBox<double> ( bbox_int ), 1.0, 1.0 ) ) {
-        BOOST_LOG_TRIVIAL(debug) <<  _ ( "Dimensions invalid !" ) ;
+        BOOST_LOG_TRIVIAL(debug) <<   "Dimensions invalid !" ;
         return 0;
     }
 
@@ -327,7 +326,7 @@ Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox
     int tile_xmax=euclideanDivisionQuotient ( bbox.xmax -1,tm->getTileW() );
     int nbx = tile_xmax - tile_xmin + 1;
     if ( nbx >= servicesConf->getMaxTileX() ) {
-        BOOST_LOG_TRIVIAL(info) <<  _ ( "Too Much Tile on X axis" ) ;
+        BOOST_LOG_TRIVIAL(info) <<   "Too Much Tile on X axis" ;
         error=2;
         return 0;
     }
@@ -341,7 +340,7 @@ Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox
     int tile_ymax = euclideanDivisionQuotient ( bbox.ymax-1,tm->getTileH() );
     int nby = tile_ymax - tile_ymin + 1;
     if ( nby >= servicesConf->getMaxTileY() ) {
-        BOOST_LOG_TRIVIAL(info) <<  _ ( "Too Much Tile on Y axis" ) ;
+        BOOST_LOG_TRIVIAL(info) <<   "Too Much Tile on Y axis" ;
         error=2;
         return 0;
     }
@@ -382,7 +381,7 @@ Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox
 std::string Level::getPath ( int tilex, int tiley) {
     // Cas normalement filtré en amont (exception WMS/WMTS)
     if ( tilex < 0 || tiley < 0 ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Indice de tuile negatif" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Indice de tuile negatif" ;
         return "";
     }
 
@@ -401,7 +400,7 @@ std::string Level::getDirPath ( int tilex, int tiley ) {
         std::string file = getPath(tilex,tiley);
         return file.substr(0,file.find_last_of("/"));        
     } else {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "getDirPath n'a pas de sens dans le cas d'un contexte non fichier" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "getDirPath n'a pas de sens dans le cas d'un contexte non fichier" ;
         return "";
     }
 
@@ -471,7 +470,7 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
         return new DataSourceDecoder<DeflateDecoder> ( encData );
     else if ( format==Rok4Format::TIFF_PKB_INT8 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         return new DataSourceDecoder<PackBitsDecoder> ( encData );
-    BOOST_LOG_TRIVIAL(error) <<  _ ( "Type d'encodage inconnu : " ) <<format ;
+    BOOST_LOG_TRIVIAL(error) <<   "Type d'encodage inconnu : " <<format ;
     return 0;
 }
 
@@ -479,17 +478,17 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
 DataSource* Level::getTile (int x, int y) {
 
     DataSource* source = getEncodedTile ( x, y );
-    if (source == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+    if (source == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND,  "No data found", "wmts" ) );
 
     size_t size;
-    if (source->getData ( size ) == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+    if (source->getData ( size ) == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND,  "No data found", "wmts" ) );
 
     if ( format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_LZW_INT8 ||
          format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_INT8 ||
          format == Rok4Format::TIFF_PKB_FLOAT32 || format == Rok4Format::TIFF_PKB_INT8
         )
     {
-        BOOST_LOG_TRIVIAL(debug) <<  _ ( "GetTile Tiff" ) ;
+        BOOST_LOG_TRIVIAL(debug) <<   "GetTile Tiff" ;
         TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( source,format,channels,tm->getTileW(), tm->getTileH() );
         return fullTiffDS;
     }
@@ -499,7 +498,7 @@ DataSource* Level::getTile (int x, int y) {
 
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
     int pixel_size=1;
-    BOOST_LOG_TRIVIAL(debug) <<  _ ( "GetTile Image" ) ;
+    BOOST_LOG_TRIVIAL(debug) <<   "GetTile Image" ;
     if ( format==Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         pixel_size=4;
 

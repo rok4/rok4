@@ -45,7 +45,7 @@ TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
 
     TiXmlDocument doc ( filePath.c_str() );
     if ( ! doc.LoadFile() ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "                Ne peut pas charger le fichier " ) << filePath ;
+        BOOST_LOG_TRIVIAL(error) <<   "                Ne peut pas charger le fichier " << filePath ;
         return;
     }
 
@@ -55,11 +55,11 @@ TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
-        BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( "            Impossible de recuperer la racine." ) ;
+        BOOST_LOG_TRIVIAL(error) <<  filePath <<  "            Impossible de recuperer la racine." ;
         return;
     }
     if ( strcmp ( pElem->Value(),"tileMatrixSet" ) ) {
-        BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( "            La racine n'est pas un tileMatrixSet." ) ;
+        BOOST_LOG_TRIVIAL(error) <<  filePath <<  "            La racine n'est pas un tileMatrixSet." ;
         return;
     }
     hRoot=TiXmlHandle ( pElem );
@@ -80,7 +80,7 @@ TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
     id = filePath.substr ( idBegin+1, idEnd-idBegin-1 );
 
     if ( Request::containForbiddenChars(id) ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << id <<_ ( " : l'identifiant du TMS contient des caracteres interdits" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "TileMatrixSet " << id << " : l'identifiant du TMS contient des caracteres interdits" ;
         return;
     }
 
@@ -88,7 +88,7 @@ TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
 
     pElem=hRoot.FirstChild ( "crs" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << id <<_ ( " pas de crs!!" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "TileMatrixSet " << id << " pas de crs!!" ;
         return;
     }
     crs = CRS( DocumentXML::getTextStrFromElem(pElem) );
@@ -134,7 +134,7 @@ TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
     }
 
     if ( listTM.size() == 0 ) {
-        BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucun tileMatrix trouve dans le tileMatrixSet" ) << id <<_ ( " : il est invalide!!" ) ;
+        BOOST_LOG_TRIVIAL(error) <<   "Aucun tileMatrix trouve dans le tileMatrixSet" << id << " : il est invalide!!" ;
         return;
     }
 

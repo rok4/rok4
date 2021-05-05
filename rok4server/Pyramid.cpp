@@ -51,7 +51,6 @@
 #include "TiffEncoder.h"
 #include "Level.h"
 #include <cfloat>
-#include "intl.h"
 #include "config.h"
 #include "EmptyImage.h"
 
@@ -207,14 +206,14 @@ Image* Pyramid::getbbox ( ServicesXML* servicesXML, BoundingBox<double> bbox, in
         Grid* grid = new Grid ( width, height, bbox );
 
 
-        BOOST_LOG_TRIVIAL(debug) <<  _ ( "debut pyramide" ) ;
+        BOOST_LOG_TRIVIAL(debug) <<   "debut pyramide" ;
         if ( !grid->reproject ( dst_crs.getProj4Code(),tms->getCrs().getProj4Code() ) ) {
             // BBOX invalide
             delete grid;
             error=1;
             return 0;
         }
-        BOOST_LOG_TRIVIAL(debug) <<  _ ( "fin pyramide" ) ;
+        BOOST_LOG_TRIVIAL(debug) <<   "fin pyramide" ;
 
         resolution_x = ( grid->bbox.xmax - grid->bbox.xmin ) / width;
         resolution_y = ( grid->bbox.ymax - grid->bbox.ymin ) / height;
@@ -233,7 +232,7 @@ Image* Pyramid::getbbox ( ServicesXML* servicesXML, BoundingBox<double> bbox, in
     }
 
     std::string l = best_level ( resolution_x, resolution_y, false );
-    BOOST_LOG_TRIVIAL(debug) <<  _ ( "best_level=" ) << l << _ ( " resolution requete=" ) << resolution_x << " " << resolution_y ;
+    BOOST_LOG_TRIVIAL(debug) <<   "best_level=" << l <<  " resolution requete=" << resolution_x << " " << resolution_y ;
 
     if ( tms->getCrs() == dst_crs || servicesXML->are_the_two_CRS_equal( tms->getCrs().getProj4Code(), dst_crs.getProj4Code() ) ) {
         return levels[l]->getbbox ( servicesXML, bbox, width, height, interpolation, error );
@@ -258,11 +257,11 @@ Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> b
 
     ExtendedCompoundImageFactory facto;
     std::vector<Image*> images;
-    BOOST_LOG_TRIVIAL(debug) <<  _ ( "BBox en dehors de la definition du CRS" ) ;
+    BOOST_LOG_TRIVIAL(debug) <<   "BBox en dehors de la definition du CRS" ;
 
 
     if ( cropBBox.xmin == cropBBox.xmax || cropBBox.ymin == cropBBox.ymax ) { // BBox out of CRS definition area Only NoData
-        BOOST_LOG_TRIVIAL(debug) <<  _ ( "BBox decoupe incorrect" ) ;
+        BOOST_LOG_TRIVIAL(debug) <<   "BBox decoupe incorrect" ;
     } else {
 
         double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
@@ -294,20 +293,20 @@ Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> b
         newHeigth += 2;
         newWidth += 2;
 
-        BOOST_LOG_TRIVIAL(debug) <<  _ ( "New Width = " ) << newWidth << " " << _ ( "New Height = " ) << newHeigth ;
-        BOOST_LOG_TRIVIAL(debug) <<  _ ( "ratio_x = " ) << ratio_x << " " << _ ( "ratio_y = " ) << ratio_y ;
+        BOOST_LOG_TRIVIAL(debug) <<   "New Width = " << newWidth << " " <<  "New Height = " << newHeigth ;
+        BOOST_LOG_TRIVIAL(debug) <<   "ratio_x = " << ratio_x << " " <<  "ratio_y = " << ratio_y ;
 
 
         Image* tmp = 0;
         int cropError = 0;
         if ( (1/ratio_x > 5 && newWidth < 3) || (newHeigth < 3 && 1/ratio_y > 5) ){ //Too small BBox
-            BOOST_LOG_TRIVIAL(debug) <<  _ ( "BBox decoupe incorrect" ) ;
+            BOOST_LOG_TRIVIAL(debug) <<   "BBox decoupe incorrect" ;
             tmp = 0;
         } else if ( newWidth > 0 && newHeigth > 0 ) {
             tmp = levels[l]->getbbox ( servicesXML, cropBBox, newWidth, newHeigth, tms->getCrs(), dst_crs, interpolation, cropError );
         }
         if ( tmp != 0 ) {
-            BOOST_LOG_TRIVIAL(debug) <<  _ ( "Image decoupe valide" ) ;
+            BOOST_LOG_TRIVIAL(debug) <<   "Image decoupe valide" ;
             images.push_back ( tmp );
         }
     }

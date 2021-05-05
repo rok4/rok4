@@ -53,7 +53,6 @@ class LayerXML;
 #include "DocumentXML.h"
 
 #include "config.h"
-#include "intl.h"
 
 class LayerXML : public DocumentXML
 {
