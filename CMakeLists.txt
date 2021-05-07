@@ -108,70 +108,73 @@ if(BUILD_DOC)
   # Documentation Doxygen
 
   FILE(GLOB dox_configs ${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/Doxyfile.*.in)
-  if(dox_configs)
-    find_package(Doxygen)
-    if(DOXYGEN_FOUND)
-      
-      MESSAGE("-- Detecting documentation language")
-      FOREACH(doxconf ${dox_configs})
-          STRING(LENGTH ${doxconf} doxconf_length)
-          MATH( EXPR doxconf_pos "${doxconf_length} - 5")
-          STRING(SUBSTRING ${doxconf} ${doxconf_pos} 2 doxconf_lang)
-          MESSAGE("  - adding ${doxconf_lang}")
-          set (doxconf_out ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.${doxconf_lang})
-          configure_file(${doxconf} ${doxconf_out} @ONLY)
-          FILE(STRINGS ${doxconf_out} doxconf_outdir_line REGEX "OUTPUT_DIRECTORY.*=.*$")
-          STRING(REGEX REPLACE "OUTPUT_DIRECTORY.*= *" "" doxconf_outdir ${doxconf_outdir_line})
-          add_custom_target(doc-${doxconf_lang}
-             mkdir -p ${doxconf_outdir}
-             COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.${doxconf_lang} 
-             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-             COMMENT "Generating API documentation with Doxygen" VERBATIM)
-          add_dependencies(doc doc-${doxconf_lang})
-      ENDFOREACH(doxconf)
-    endif(DOXYGEN_FOUND)
-  endif(dox_configs)
+  find_package(Doxygen)
+  if(DOXYGEN_FOUND)
+    
+    MESSAGE("-- Detecting documentation language")
+    FOREACH(doxconf ${dox_configs})
+        STRING(LENGTH ${doxconf} doxconf_length)
+        MATH( EXPR doxconf_pos "${doxconf_length} - 5")
+        STRING(SUBSTRING ${doxconf} ${doxconf_pos} 2 doxconf_lang)
+        MESSAGE("  - adding ${doxconf_lang}")
+        set (doxconf_out ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.${doxconf_lang})
+        configure_file(${doxconf} ${doxconf_out} @ONLY)
+        FILE(STRINGS ${doxconf_out} doxconf_outdir_line REGEX "OUTPUT_DIRECTORY.*=.*$")
+        STRING(REGEX REPLACE "OUTPUT_DIRECTORY.*= *" "" doxconf_outdir ${doxconf_outdir_line})
+        add_custom_target(doc-${doxconf_lang}
+            mkdir -p ${doxconf_outdir}
+            COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.${doxconf_lang} 
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen" VERBATIM)
+        add_dependencies(doc doc-${doxconf_lang})
+    ENDFOREACH(doxconf)
+  endif(DOXYGEN_FOUND)
 
   # Documentation NaturalDocs
-  if(BUILD_BE4)
-    find_package(NaturalDocs)
-    if(NATURALDOCS_FOUND)
+  find_package(NaturalDocs)
+  if(NATURALDOCS_FOUND)
 
-        MESSAGE("  - adding Natuladocs")
-        add_custom_command(OUTPUT make_naturaldocs_command 
-          COMMAND mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/naturaldocs/html 
-          COMMAND naturaldocs -r --input ${CMAKE_CURRENT_BINARY_DIR}/rok4generation/main/src/ --exclude-input ${CMAKE_CURRENT_BINARY_DIR}/rok4generation/main/src/blib -img ${CMAKE_CURRENT_SOURCE_DIR}/docs/images --no-auto-group --documented-only --output HTML ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/naturaldocs/html --project ${CMAKE_CURRENT_SOURCE_DIR}/docs/naturaldocs/
-          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/rok4generation/main/)
+      MESSAGE("  - adding Natuladocs")
+      add_custom_command(OUTPUT make_naturaldocs_command 
+        COMMAND mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/naturaldocs/html 
+        COMMAND naturaldocs -r --input ${CMAKE_CURRENT_BINARY_DIR}/rok4generation/main/src/ --exclude-input ${CMAKE_CURRENT_BINARY_DIR}/rok4generation/main/src/blib -img ${CMAKE_CURRENT_SOURCE_DIR}/docs/images --no-auto-group --documented-only --output HTML ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/naturaldocs/html --project ${CMAKE_CURRENT_SOURCE_DIR}/docs/naturaldocs/
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/rok4generation/main/)
 
-        add_custom_target(make_naturaldocs_target DEPENDS make_naturaldocs_command)
+      add_custom_target(make_naturaldocs_target DEPENDS make_naturaldocs_command)
 
-        add_dependencies(doc make_naturaldocs_target)
+      add_dependencies(doc make_naturaldocs_target)
 
-    endif(NATURALDOCS_FOUND)
-  endif(BUILD_BE4)
+  endif(NATURALDOCS_FOUND)
 
   # Documentation mkdocs
-
-  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/docs/mkdocs/mkdocs.yml")
-    find_package(Mkdocs)
-    if(MKDOCS_FOUND)
-      
-      MESSAGE("  - adding mkdocs")
-            
-      add_custom_command(OUTPUT make_mkdocs_command 
-        COMMAND rm -r ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/mkdocs
-        COMMAND LC_ALL=C.UTF-8 mkdocs build --config-file ${CMAKE_CURRENT_SOURCE_DIR}/docs/mkdocs/mkdocs.yml --site-dir /tmp/mkdocs-rok4
-        COMMAND mv /tmp/mkdocs-rok4 ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/mkdocs
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-
-      add_custom_target(make_mkdocs_target DEPENDS make_mkdocs_command)
-      add_dependencies(doc make_mkdocs_target)
+  find_package(Mkdocs)
+  if(MKDOCS_FOUND)
+    
+    MESSAGE("  - adding mkdocs")
           
-    endif(MKDOCS_FOUND)
-  endif()
+    add_custom_command(OUTPUT make_mkdocs_command 
+      COMMAND rm -r ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/mkdocs
+      COMMAND LC_ALL=C.UTF-8 mkdocs build --config-file ${CMAKE_CURRENT_SOURCE_DIR}/docs/mkdocs/mkdocs.yml --site-dir /tmp/mkdocs-rok4
+      COMMAND mv /tmp/mkdocs-rok4 ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/mkdocs
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+    add_custom_target(make_mkdocs_target DEPENDS make_mkdocs_command)
+    add_dependencies(doc make_mkdocs_target)
+        
+  endif(MKDOCS_FOUND)
+
+
+  MESSAGE("  - adding index")
+        
+  add_custom_command(OUTPUT make_indexdoc_command 
+    COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/docs/index.html ${CMAKE_CURRENT_SOURCE_DIR}/docs/images/favicon.png ${CMAKE_CURRENT_SOURCE_DIR}/docs/images/rok4.png ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+  add_custom_target(make_indexdoc_target DEPENDS make_indexdoc_command)
+  add_dependencies(doc make_indexdoc_target)
 
   # Installation
-  INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/docs/" DESTINATION usr/share/doc/rok4)
+  INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/docs/" DESTINATION share/doc/rok4)
 
 endif(BUILD_DOC)
     
