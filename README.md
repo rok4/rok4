@@ -118,6 +118,8 @@ Pour la documentation du code source C++ : `sudo apt install doxygen graphviz`
 
 Pour la documentation du code source Perl : `sudo apt install naturaldocs`
 
+Pour la documentation utilisateur : `sudo apt install mkdocs && pip3 install mkdocs-exclude mkdocs-select-files`
+
 ## La compilation et l'installation
 
 ### Instructions

@@ -159,8 +159,9 @@ if(BUILD_DOC)
       MESSAGE("  - adding mkdocs")
             
       add_custom_command(OUTPUT make_mkdocs_command 
-        COMMAND mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/mkdocs
-        COMMAND LC_ALL=C.UTF-8 mkdocs build --config-file ${CMAKE_CURRENT_SOURCE_DIR}/docs/mkdocs/mkdocs.yml --site-dir ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/mkdocs
+        COMMAND rm -r ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/mkdocs
+        COMMAND LC_ALL=C.UTF-8 mkdocs build --config-file ${CMAKE_CURRENT_SOURCE_DIR}/docs/mkdocs/mkdocs.yml --site-dir /tmp/mkdocs-rok4
+        COMMAND mv /tmp/mkdocs-rok4 ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/mkdocs
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
       add_custom_target(make_mkdocs_target DEPENDS make_mkdocs_command)
@@ -170,7 +171,7 @@ if(BUILD_DOC)
   endif()
 
   # Installation
-  INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/docs/"  DESTINATION share/doc/)
+  INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/docs/" DESTINATION usr/share/doc/rok4)
 
 endif(BUILD_DOC)
     

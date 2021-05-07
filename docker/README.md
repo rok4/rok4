@@ -14,5 +14,5 @@ Utilisation du script `build.sh` :
 ./build.sh [--rok4server] [--rok4generation] --os buster|stretch|centos7 [--proxy http://proxy.host:port]
 ```
 
-[Utilisation de la partie serveur](./rok4server/README.md)
-[Utilisation de la partie outils](./rok4generation/README.md)
+* [Utilisation de la partie serveur](./rok4server/README.md)
+* [Utilisation de la partie outils](./rok4generation/README.md)
