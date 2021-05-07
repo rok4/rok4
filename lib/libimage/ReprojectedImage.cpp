@@ -48,7 +48,7 @@
 #include <string>
 #include "Image.h"
 #include "Grid.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Kernel.h"
 
 #include "Utils.h"

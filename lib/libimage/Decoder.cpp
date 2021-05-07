@@ -38,7 +38,7 @@
 
 #include "Decoder.h"
 #include <setjmp.h>
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 #include "jpeglib.h"
 #include "zlib.h"
@@ -148,7 +148,7 @@ const uint8_t* JpegDecoder::decode ( DataSource* source, size_t &size ) {
                 jpeg_finish_decompress ( &cinfo );
                 delete cinfo.src;
                 jpeg_destroy_decompress ( &cinfo );
-                LOGGER_ERROR ( "Probleme lecture tuile Jpeg" );
+                BOOST_LOG_TRIVIAL(error) <<  "Probleme lecture tuile Jpeg" ;
                 delete[] raw_data;
                 size = 0;
                 return 0;
@@ -158,7 +158,7 @@ const uint8_t* JpegDecoder::decode ( DataSource* source, size_t &size ) {
 
         jpeg_finish_decompress ( &cinfo );
     } else
-        LOGGER_ERROR ( "Erreur de lecture en tete jpeg" );
+        BOOST_LOG_TRIVIAL(error) <<  "Erreur de lecture en tete jpeg" ;
 
 
     // Destruction de cinfo
@@ -190,13 +190,13 @@ const uint8_t* PngDecoder::decode ( DataSource* source, size_t &size ) {
     int zinit;
     if ( ( zinit=inflateInit ( &zstream ) ) != Z_OK ) {
         if ( zinit==Z_MEM_ERROR )
-            LOGGER_ERROR ( "Decompression PNG : pas assez de memoire" );
+            BOOST_LOG_TRIVIAL(error) <<  "Decompression PNG : pas assez de memoire" ;
         else if ( zinit==Z_VERSION_ERROR )
-            LOGGER_ERROR ( "Decompression PNG : versions de zlib incompatibles" );
+            BOOST_LOG_TRIVIAL(error) <<  "Decompression PNG : versions de zlib incompatibles" ;
         else if ( zinit==Z_STREAM_ERROR )
-            LOGGER_ERROR ( "Decompression PNG : parametres invalides" );
+            BOOST_LOG_TRIVIAL(error) <<  "Decompression PNG : parametres invalides" ;
         else
-            LOGGER_ERROR ( "Decompression PNG : echec" );
+            BOOST_LOG_TRIVIAL(error) <<  "Decompression PNG : echec" ;
         return 0;
     }
 
@@ -240,7 +240,7 @@ const uint8_t* PngDecoder::decode ( DataSource* source, size_t &size ) {
         zstream.avail_out = 1;
         // Decompression 1er octet de la ligne (=0 dans le cache)
         if ( inflate ( &zstream, Z_SYNC_FLUSH ) != Z_OK ) {
-            LOGGER_ERROR ( "Decompression PNG : probleme png decompression au debut de la ligne " << h );
+            BOOST_LOG_TRIVIAL(error) <<  "Decompression PNG : probleme png decompression au debut de la ligne " << h ;
             delete[] raw_data;
             return 0;
         }
@@ -251,14 +251,14 @@ const uint8_t* PngDecoder::decode ( DataSource* source, size_t &size ) {
 
             if ( err == Z_STREAM_END && h == height-1 ) break; // fin du fichier OK.
 
-            LOGGER_ERROR ( "Decompression PNG : probleme png decompression des pixels de la ligne " << h << " " << err );
+            BOOST_LOG_TRIVIAL(error) <<  "Decompression PNG : probleme png decompression des pixels de la ligne " << h << " " << err ;
             delete[] raw_data;
             return 0;
         }
     }
     // Destruction du flux
     if ( inflateEnd ( &zstream ) !=Z_OK ) {
-        LOGGER_ERROR ( "Decompression PNG : probleme de liberation du flux" );
+        BOOST_LOG_TRIVIAL(error) <<  "Decompression PNG : probleme de liberation du flux" ;
         delete[] raw_data;
         return 0;
     }
@@ -333,13 +333,13 @@ const uint8_t* DeflateDecoder::decode ( DataSource* source, size_t &size ) {
     int zinit;
     if ( ( zinit=inflateInit ( &zstream ) ) != Z_OK ) {
         if ( zinit==Z_MEM_ERROR )
-            LOGGER_ERROR ( "Decompression DEFLATE : pas assez de memoire" );
+            BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : pas assez de memoire" ;
         else if ( zinit==Z_VERSION_ERROR )
-            LOGGER_ERROR ( "Decompression DEFLATE : versions de zlib incompatibles" );
+            BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : versions de zlib incompatibles" ;
         else if ( zinit==Z_STREAM_ERROR )
-            LOGGER_ERROR ( "Decompression DEFLATE : parametres invalides" );
+            BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : parametres invalides" ;
         else
-            LOGGER_ERROR ( "Decompression DEFLATE : echec" );
+            BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : echec" ;
         return 0;
     }
 
@@ -364,7 +364,7 @@ const uint8_t* DeflateDecoder::decode ( DataSource* source, size_t &size ) {
                 rawSize *=2;
                 continue;
             }
-            LOGGER_ERROR ( "Decompression DEFLATE : probleme deflate decompression " << err );
+            BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : probleme deflate decompression " << err ;
             delete[] raw_data;
             size = 0;
             return 0;
@@ -373,7 +373,7 @@ const uint8_t* DeflateDecoder::decode ( DataSource* source, size_t &size ) {
 
     // Destruction du flux
     if ( inflateEnd ( &zstream ) !=Z_OK ) {
-        LOGGER_ERROR ( "Decompression DEFLATE : probleme de liberation du flux" );
+        BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : probleme de liberation du flux" ;
         delete[] raw_data;
         size = 0;
         return 0;

@@ -134,6 +134,11 @@ private:
      */
     CRS crs;
     /**
+     * \~french \brief Est ce que le TMS est un QTree ?
+     * \~english \brief Is TMS a QTree ?
+     */
+    bool isQTree;
+    /**
      * \~french \brief Liste des TileMatrix
      * \~english \brief List of TileMatrix
      */
@@ -233,6 +238,15 @@ public:
      * \return title
      */
     std::string getTitle() ;
+    /**
+     * \~french
+     * \brief Précise si le TileMatrixSet est un QTree
+     * \return isQTree
+     * \~english
+     * \brief Precise if the TileMatrixSet is a QTree
+     * \return isQTree
+     */
+    bool getIsQTree();
     /**
      * \~french
      * \brief Retourne le résumé

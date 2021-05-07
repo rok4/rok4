@@ -51,9 +51,10 @@
 #define SWIFT_CONTEXT_H
 
 #include <curl/curl.h>
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Context.h"
 #include "LibcurlStruct.h"
+#include <fstream>
 
 
 #define ROK4_SWIFT_AUTHURL "ROK4_SWIFT_AUTHURL"
@@ -229,9 +230,9 @@ public:
     std::string getPath(std::string racine,int x,int y,int pathDepth);
 
     virtual void print() {
-        LOGGER_INFO ( "------ Swift Context -------" );
-        LOGGER_INFO ( "\t- container name = " << container_name );
-        LOGGER_INFO ( "\t- token = " << token );
+        BOOST_LOG_TRIVIAL(info) <<  "------ Swift Context -------" ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- container name = " << container_name ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- token = " << token ;
     }
 
     virtual std::string toString() {
@@ -281,13 +282,13 @@ public:
             if ( token_stream.is_open() ) {
                 token_stream << token;
                 token_stream.close();
-                LOGGER_DEBUG( "Token file " << token_file << " updated with new token " << token );
+                BOOST_LOG_TRIVIAL(debug) <<  "Token file " << token_file << " updated with new token " << token ;
             } else {
-                LOGGER_WARN("Token file " << token_file << " could not be updated with new token " << token);
+                BOOST_LOG_TRIVIAL(warning) << "Token file " << token_file << " could not be updated with new token " << token;
             }
         }
         else if(token_file != "") {
-            LOGGER_DEBUG( "Token file " << token_file << " already contains the used token " << token );
+            BOOST_LOG_TRIVIAL(debug) <<  "Token file " << token_file << " already contains the used token " << token ;
         }
     }
     

@@ -7,6 +7,25 @@ set(ROK4DEPENDENCIES_FOUND TRUE BOOL)
 
 ###################################################### Extern libraries, shared
 
+
+if(NOT TARGET boostlog)
+  find_package(BoostLog)
+  if(BOOSTLOG_FOUND)
+    add_library(boostlog SHARED IMPORTED)
+    set_property(TARGET boostlog PROPERTY IMPORTED_LOCATION ${BOOSTLOG_LIBRARY})
+    add_library(boostlogsetup SHARED IMPORTED)
+    set_property(TARGET boostlogsetup PROPERTY IMPORTED_LOCATION ${BOOSTLOGSETUP_LIBRARY})
+    add_library(boostthread SHARED IMPORTED)
+    set_property(TARGET boostthread PROPERTY IMPORTED_LOCATION ${BOOSTTHREAD_LIBRARY})
+    add_library(boostsystem SHARED IMPORTED)
+    set_property(TARGET boostsystem PROPERTY IMPORTED_LOCATION ${BOOSTSYSTEM_LIBRARY})
+    add_library(boostfilesystem SHARED IMPORTED)
+    set_property(TARGET boostfilesystem PROPERTY IMPORTED_LOCATION ${BOOSTFILESYSTEM_LIBRARY})
+  else(BOOSTLOG_FOUND)
+    message(FATAL_ERROR "Cannot find extern library boostlog")
+  endif(BOOSTLOG_FOUND)
+endif(NOT TARGET boostlog)
+
 if(NOT TARGET tinyxml)
   find_package(TinyXML)
   if(TINYXML_FOUND)
@@ -222,24 +241,6 @@ else(PKB_FOUND)
 endif(PKB_FOUND)
 endif(NOT TARGET pkb)
 
-
-if(NOT TARGET logger)
-find_package(Logger)
-if(LOGGER_FOUND)
-  add_library(logger STATIC IMPORTED)
-  set_property(TARGET logger PROPERTY IMPORTED_LOCATION ${LOGGER_LIBRARY})
-else(LOGGER_FOUND)
-  if(BUILD_DEPENDENCIES)
-    message(STATUS "Building libLogger")
-    if(PACKAGE_LIB)
-      add_subdirectory(${ROK4LIBSDIR}/liblogger)
-    else(PACKAGE_LIB)
-      add_subdirectory(${ROK4LIBSDIR}/liblogger EXCLUDE_FROM_ALL)
-    endif(PACKAGE_LIB)
-  endif(BUILD_DEPENDENCIES)
-endif(LOGGER_FOUND)
-endif(NOT TARGET logger)
-
 if(NOT TARGET image)
   find_package(Image)
   if(IMAGE_FOUND)
@@ -257,12 +258,6 @@ if(NOT TARGET image)
     endif(BUILD_DEPENDENCIES)
   endif(IMAGE_FOUND)
 endif(NOT TARGET image)
-
-#Gettext Support
-
-set(GettextTranslate_ALL FALSE)
-set(GettextTranslate_GMO_BINARY TRUE)
-include(GettextTranslate)
 
 set(ROK4DEPENDENCIES_FOUND TRUE BOOL)
 

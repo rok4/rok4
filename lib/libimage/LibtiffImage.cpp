@@ -50,7 +50,7 @@
  */
 
 #include "LibtiffImage.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 #include "OneBitConverter.h"
 
@@ -189,37 +189,43 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
     /************** RECUPERATION DES INFORMATIONS **************/
 
     if ( tif == NULL ) {
-        LOGGER_ERROR ( "Unable to open TIFF (to read) " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to open TIFF (to read) " << filename ;
         return NULL;
     }
     
     if ( TIFFGetField ( tif, TIFFTAG_IMAGEWIDTH, &width ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read pixel width for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to read pixel width for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_IMAGELENGTH, &height ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read pixel height for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to read pixel height for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_SAMPLESPERPIXEL,&channels ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read number of samples per pixel for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to read number of samples per pixel for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_PLANARCONFIG,&planarconfig ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read planar configuration for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to read planar configuration for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( planarconfig != PLANARCONFIG_CONTIG && channels != 1 ) {
-        LOGGER_ERROR ( "Planar configuration have to be 'PLANARCONFIG_CONTIG' for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Planar configuration have to be 'PLANARCONFIG_CONTIG' for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_BITSPERSAMPLE,&bitspersample ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read number of bits per sample for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to read number of bits per sample for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
@@ -233,28 +239,33 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         } else if ( bitspersample == 1 ) {
             sf = SAMPLEFORMAT_UINT;
         } else {
-            LOGGER_ERROR ( "Unable to determine sample format from the number of bits per sample (" << bitspersample << ") for file " << filename );
+            BOOST_LOG_TRIVIAL(error) <<  "Unable to determine sample format from the number of bits per sample (" << bitspersample << ") for file " << filename ;
+            TIFFClose ( tif );
             return NULL;
         }
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_PHOTOMETRIC,&ph ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read photometric for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to read photometric for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
     
     if (toROK4Photometric ( ph ) == 0) {
-        LOGGER_ERROR ( "Not handled photometric (PALETTE ?) for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Not handled photometric (PALETTE ?) for file " << filename ;
+        TIFFClose ( tif );
         return NULL;            
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_COMPRESSION,&comp ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read compression for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to read compression for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFGetField ( tif, TIFFTAG_ROWSPERSTRIP,&rowsperstrip ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read number of rows per strip for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to read number of rows per strip for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
@@ -266,21 +277,23 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         // on le précise pour convertir à la volée lors de la lecture des lignes
         es = toROK4ExtraSample(extrasamples[0]);
         if ( es == ExtraSample::ALPHA_ASSOC ) {
-            LOGGER_INFO ( "Alpha sample is associated for the file " << filename << ". We will convert for reading");
+            BOOST_LOG_TRIVIAL(info) <<  "Alpha sample is associated for the file " << filename << ". We will convert for reading";
         }
     }
     
     /********************** CONTROLES **************************/
 
     if ( ! LibtiffImage::canRead ( bitspersample, toROK4SampleFormat ( sf ) ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( toROK4SampleFormat ( sf ) ) << " and " << bitspersample << " bits per sample" );
-        LOGGER_ERROR ( "\t for the image to read : " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Not supported sample type : " << SampleFormat::toString ( toROK4SampleFormat ( sf ) ) << " and " << bitspersample << " bits per sample" ;
+        BOOST_LOG_TRIVIAL(error) <<  "\t for the image to read : " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" ;
+            TIFFClose ( tif );
             return NULL;
         }
     } else {
@@ -313,18 +326,18 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         photometric = Photometric::RGB;
 
     if ( width <= 0 || height <= 0 ) {
-        LOGGER_ERROR ( "One dimension is not valid for the output image " << filename << " : " << width << ", " << height );
+        BOOST_LOG_TRIVIAL(error) <<  "One dimension is not valid for the output image " << filename << " : " << width << ", " << height ;
         return NULL;
     }
     
     if ( channels <= 0 ) {
-        LOGGER_ERROR ( "Number of samples per pixel is not valid for the output image " << filename << " : " << channels );
+        BOOST_LOG_TRIVIAL(error) <<  "Number of samples per pixel is not valid for the output image " << filename << " : " << channels ;
         return NULL;
     }
     
     if ( ! LibtiffImage::canWrite ( bitspersample, sampleformat ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sampleformat ) << " and " << bitspersample << " bits per sample" );
-        LOGGER_ERROR ( "\t for the image to write : " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Not supported sample type : " << SampleFormat::toString ( sampleformat ) << " and " << bitspersample << " bits per sample" ;
+        BOOST_LOG_TRIVIAL(error) <<  "\t for the image to write : " << filename ;
         return NULL;
     }
     
@@ -334,81 +347,93 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
         int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
         if ( calcWidth != width || calcHeight != height ) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
-            LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
-            LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
+            BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" ;
+            BOOST_LOG_TRIVIAL(error) <<  "Height is " << height << " and calculation give " << calcHeight ;
+            BOOST_LOG_TRIVIAL(error) <<  "Width is " << width << " and calculation give " << calcWidth ;
             return NULL;
         }
     }
 
     TIFF* tif = TIFFOpen ( filename, "w" );
     if ( tif == NULL ) {
-        LOGGER_ERROR ( "Unable to open TIFF (to write) " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to open TIFF (to write) " << filename ;
         return NULL;
     }
 
     // Ecriture de l'en-tête pour récupérer les informations sur l'image
     if ( TIFFSetField ( tif, TIFFTAG_IMAGEWIDTH, width ) < 1 ) {
-        LOGGER_ERROR ( "Unable to write pixel width for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to write pixel width for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_IMAGELENGTH, height ) < 1 ) {
-        LOGGER_ERROR ( "Unable to write pixel height for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to write pixel height for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_SAMPLESPERPIXEL,channels ) < 1 ) {
-        LOGGER_ERROR ( "Unable to write number of samples per pixel for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to write number of samples per pixel for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( channels == 4 || channels == 2 ) {
         uint16_t extrasample = EXTRASAMPLE_UNASSALPHA;
         if ( TIFFSetField ( tif, TIFFTAG_EXTRASAMPLES,1,&extrasample ) < 1 ) {
-            LOGGER_ERROR ( "Unable to write number of extra samples for file " << filename );
+            BOOST_LOG_TRIVIAL(error) <<  "Unable to write number of extra samples for file " << filename ;
+            TIFFClose ( tif );
             return NULL;
         }
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_PLANARCONFIG,PLANARCONFIG_CONTIG ) < 1 ) {
-        LOGGER_ERROR ( "Unable to write planar configuration for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to write planar configuration for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_BITSPERSAMPLE, bitspersample ) < 1 ) {
-        LOGGER_ERROR ( "Unable to write number of bits per sample for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to write number of bits per sample for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_SAMPLEFORMAT, fromROK4SampleFormat ( sampleformat ) ) < 1 ) {
-        LOGGER_ERROR ( "Unable to write sample format for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to write sample format for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_PHOTOMETRIC, fromROK4Photometric ( photometric ) ) < 1 ) {
-        LOGGER_ERROR ( "Unable to write photometric for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to write photometric for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_COMPRESSION, fromROK4Compression ( compression ) ) < 1 ) {
-        LOGGER_ERROR ( "Unable to write compression for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to write compression for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_ROWSPERSTRIP,rowsperstrip ) < 1 ) {
-        LOGGER_ERROR ( "Unable to write number of rows per strip for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to write number of rows per strip for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( TIFFSetField ( tif, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE ) < 1 ) {
-        LOGGER_ERROR ( "Unable to write pixel resolution unit for file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to write pixel resolution unit for file " << filename ;
+        TIFFClose ( tif );
         return NULL;
     }
 
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and dimensions for image (to write)'" << filename << "' are not consistent" );
+            BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and dimensions for image (to write)'" << filename << "' are not consistent" ;
+            TIFFClose ( tif );
             return NULL;
         }
     } else {
@@ -444,13 +469,13 @@ LibtiffImage::LibtiffImage (
         // On fera la conversion en entiers sur 8 bits à la volée.
         // Cette image sera comme une image sur 8 bits.
         // On change donc les informations, en précisant que la conversion doit être faite à la lecture.
-        LOGGER_DEBUG ( "We have 1-bit samples for the file " << filename << ". We will convert for reading into 8-bit samples");
+        BOOST_LOG_TRIVIAL(debug) <<  "We have 1-bit samples for the file " << filename << ". We will convert for reading into 8-bit samples";
         bitspersample = 8;
         pixelSize = channels;
         if (ph == PHOTOMETRIC_MINISWHITE) oneTo8bits = 1;
         else if (ph == PHOTOMETRIC_MINISBLACK) oneTo8bits = 2;
         else {
-            LOGGER_WARN("Image '" << filename << "' has 1-bit sample and is not PHOTOMETRIC_MINISWHITE or PHOTOMETRIC_MINISWHITE ?");
+            BOOST_LOG_TRIVIAL(warning) << "Image '" << filename << "' has 1-bit sample and is not PHOTOMETRIC_MINISWHITE or PHOTOMETRIC_MINISWHITE ?";
             oneTo8bits = 0;
         }
     } else {
@@ -496,7 +521,7 @@ int LibtiffImage::_getline ( T* buffer, int line ) {
         current_strip = line / rowsperstrip;
         int size = TIFFReadEncodedStrip ( tif, current_strip, strip_buffer, -1 );
         if ( size < 0 ) {
-            LOGGER_ERROR ( "Cannot read strip number " << current_strip << " of image " << filename );
+            BOOST_LOG_TRIVIAL(error) <<  "Cannot read strip number " << current_strip << " of image " << filename ;
             return 0;
         }
         
@@ -605,20 +630,20 @@ int LibtiffImage::writeImage ( Image* pIn ) {
 
     // Contrôle de la cohérence des 2 images : dimensions
     if ( width != pIn->getWidth() || height != pIn->getHeight() ) {
-        LOGGER_ERROR ( "Image we want to write has not consistent dimensions with the output image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Image we want to write has not consistent dimensions with the output image" ;
         return -1;
     }
 
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        uint8_t* buf_u = ( unsigned char* ) _TIFFmalloc ( width * channels );
+        uint8_t* buf_u = ( unsigned char* ) _TIFFmalloc ( width * pixelSize );
         for ( int line = 0; line < height; line++ ) {
             if (pIn->getline ( buf_u,line ) == 0) {
-                LOGGER_ERROR ( "Cannot read input image line " << line);
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot read input image line " << line;
                 return -1;
             }
             if ( TIFFWriteScanline ( tif, buf_u, line, 0 ) < 0 ) {
-                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot write file " << TIFFFileName ( tif ) << ", line " << line ;
                 return -1;
             }
         }
@@ -628,24 +653,24 @@ int LibtiffImage::writeImage ( Image* pIn ) {
         uint16_t* buf_t = ( uint16_t* ) _TIFFmalloc ( width * pixelSize );
         for ( int line = 0; line < height; line++ ) {
             if (pIn->getline ( buf_t,line ) == 0) {
-                LOGGER_ERROR ( "Cannot read input image line " << line);
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot read input image line " << line;
                 return -1;
             }
             if ( TIFFWriteScanline ( tif, buf_t, line, 0 ) < 0 ) {
-                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot write file " << TIFFFileName ( tif ) << ", line " << line ;
                 return -1;
             }
         }
         _TIFFfree ( buf_t );
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
-        float* buf_f = ( float* ) _TIFFmalloc ( width * channels * sizeof(float) );
+        float* buf_f = ( float* ) _TIFFmalloc ( width * pixelSize );
         for ( int line = 0; line < height; line++ ) {
             if (pIn->getline ( buf_f,line ) == 0) {
-                LOGGER_ERROR ( "Cannot read input image line " << line);
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot read input image line " << line;
                 return -1;
             }
             if ( TIFFWriteScanline ( tif, buf_f, line, 0 ) < 0 ) {
-                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot write file " << TIFFFileName ( tif ) << ", line " << line ;
                 return -1;
             }
         }
@@ -663,13 +688,13 @@ int LibtiffImage::writeImage ( uint8_t* buffer) {
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         for ( int line = 0; line < height; line++ ) {
             if ( TIFFWriteScanline ( tif, buffer + line * width * channels, line, 0 ) < 0 ) {
-                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot write file " << TIFFFileName ( tif ) << ", line " << line ;
                 return -1;
             }
         }
 
     } else {
-        LOGGER_ERROR ( "Image to write (from a buffer) has not 8-bit uint samples : " << filename);
+        BOOST_LOG_TRIVIAL(error) <<  "Image to write (from a buffer) has not 8-bit uint samples : " << filename;
         print();
         return -1;        
     }
@@ -685,13 +710,13 @@ int LibtiffImage::writeImage ( uint16_t* buffer) {
     if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
         for ( int line = 0; line < height; line++ ) {
             if ( TIFFWriteScanline ( tif, buffer + line * width * channels, line, 0 ) < 0 ) {
-                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot write file " << TIFFFileName ( tif ) << ", line " << line ;
                 return -1;
             }
         }
 
     } else {
-        LOGGER_ERROR ( "Image to write (from a buffer) has not 16-bit uint samples : " << filename);
+        BOOST_LOG_TRIVIAL(error) <<  "Image to write (from a buffer) has not 16-bit uint samples : " << filename;
         print();
         return -1;        
     }
@@ -706,12 +731,12 @@ int LibtiffImage::writeImage ( float* buffer) {
     if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
         for ( int line = 0; line < height; line++ ) {
             if ( TIFFWriteScanline ( tif, buffer + line * width * channels, line, 0 ) < 0 ) {
-                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot write file " << TIFFFileName ( tif ) << ", line " << line ;
                 return -1;
             }
         }
     } else {
-        LOGGER_ERROR ( "Image to write (from a buffer) has not 32-bit float samples : " << filename);
+        BOOST_LOG_TRIVIAL(error) <<  "Image to write (from a buffer) has not 32-bit float samples : " << filename;
         print();
         return -1;
     }
@@ -725,12 +750,12 @@ int LibtiffImage::writeLine ( uint8_t* buffer, int line) {
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         if ( TIFFWriteScanline ( tif, buffer, line, 0 ) < 0 ) {
-            LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
+            BOOST_LOG_TRIVIAL(error) <<  "Cannot write file " << TIFFFileName ( tif ) << ", line " << line ;
             return -1;
         }
 
     } else {
-        LOGGER_ERROR ( "Image to write (line by line) has not 8-bit uint samples : " << filename);
+        BOOST_LOG_TRIVIAL(error) <<  "Image to write (line by line) has not 8-bit uint samples : " << filename;
         print();
         return -1;        
     }
@@ -745,12 +770,12 @@ int LibtiffImage::writeLine ( uint16_t* buffer, int line) {
     // Ecriture de l'image
     if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
         if ( TIFFWriteScanline ( tif, buffer, line, 0 ) < 0 ) {
-            LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
+            BOOST_LOG_TRIVIAL(error) <<  "Cannot write file " << TIFFFileName ( tif ) << ", line " << line ;
             return -1;
         }
 
     } else {
-        LOGGER_ERROR ( "Image to write (line by line) has not 16-bit uint samples : " << filename);
+        BOOST_LOG_TRIVIAL(error) <<  "Image to write (line by line) has not 16-bit uint samples : " << filename;
         print();
         return -1;        
     }
@@ -763,11 +788,11 @@ int LibtiffImage::writeLine ( float* buffer, int line) {
     
     if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
         if ( TIFFWriteScanline ( tif, buffer, line, 0 ) < 0 ) {
-            LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
+            BOOST_LOG_TRIVIAL(error) <<  "Cannot write file " << TIFFFileName ( tif ) << ", line " << line ;
             return -1;
         }
     } else {
-        LOGGER_ERROR ( "Image to write (line by line) has not 32-bit float samples : " << filename);
+        BOOST_LOG_TRIVIAL(error) <<  "Image to write (line by line) has not 32-bit float samples : " << filename;
         print();
         return -1;
     }

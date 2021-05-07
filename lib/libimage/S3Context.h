@@ -51,7 +51,7 @@
 #define S3_CONTEXT_H
 
 #include <curl/curl.h>
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Context.h"
 #include "LibcurlStruct.h"
 
@@ -187,11 +187,11 @@ public:
     std::string getPath(std::string racine,int x,int y,int pathDepth);
 
     virtual void print() {
-        LOGGER_INFO ( "------ S3 Context -------" );
-        LOGGER_INFO ( "\t- URL = " << url );
-        LOGGER_INFO ( "\t- Key = " << key );
-        LOGGER_INFO ( "\t- Secrete Key = " << secret_key );
-        LOGGER_INFO ( "\t- Bucket name = " << bucket_name );
+        BOOST_LOG_TRIVIAL(info) <<  "------ S3 Context -------" ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- URL = " << url ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Key = " << key ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Secrete Key = " << secret_key ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Bucket name = " << bucket_name ;
     }
 
     virtual std::string toString() {

@@ -1,0 +1,21 @@
+==48804== Memcheck, a memory error detector
+==48804== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==48804== Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info
+==48804== Command: pbf2cache -r inputs/pbfs/ -t 5 5 -ultile 257 174 outputs/test_ok_file_hole.tif
+==48804== Parent PID: 48803
+==48804== 
+==48804== 
+==48804== HEAP SUMMARY:
+==48804==     in use at exit: 392 bytes in 6 blocks
+==48804==   total heap usage: 16,776 allocs, 16,770 frees, 2,555,033 bytes allocated
+==48804== 
+==48804== LEAK SUMMARY:
+==48804==    definitely lost: 0 bytes in 0 blocks
+==48804==    indirectly lost: 0 bytes in 0 blocks
+==48804==      possibly lost: 0 bytes in 0 blocks
+==48804==    still reachable: 392 bytes in 6 blocks
+==48804==         suppressed: 0 bytes in 0 blocks
+==48804== Rerun with --leak-check=full to see details of leaked memory
+==48804== 
+==48804== For lists of detected and suppressed errors, rerun with: -s
+==48804== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

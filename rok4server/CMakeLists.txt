@@ -31,48 +31,33 @@ endif(DEBUG_BUILD)
 #définition des fichiers sources
 configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 
-add_subdirectory(po)
-
-set(rok4core_SRCS  GetFeatureInfoEncoder.cpp MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp ConfLoader.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Keyword.cpp Rok4Server.cpp ProcessFactory.cpp WebService.cpp Source.cpp UtilsWMS.cpp UtilsWMTS.cpp UtilsTMS.cpp 
-TileMatrixSetXML.cpp TileMatrixXML.cpp ServerXML.cpp ServicesXML.cpp LayerXML.cpp StyleXML.cpp PyramidXML.cpp LevelXML.cpp)
+set(rok4core_SRCS  
+    GetFeatureInfoEncoder.cpp MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp ConfLoader.cpp Layer.cpp Level.cpp 
+    Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp 
+    Keyword.cpp Rok4Server.cpp ProcessFactory.cpp WebService.cpp Source.cpp UtilsWMS.cpp UtilsWMTS.cpp UtilsTMS.cpp 
+    TileMatrixSetXML.cpp TileMatrixXML.cpp ServerXML.cpp ServicesXML.cpp LayerXML.cpp StyleXML.cpp PyramidXML.cpp LevelXML.cpp
+)
 set(rok4server_SRCS main.cpp )
-#set(rok4apitest_SRCS test_api.c )
-#set(rok4commandtest_SRCS test_command.cpp )
 
 
 add_library(rok4core STATIC ${rok4core_SRCS})
 
 add_executable(rok4 ${rok4server_SRCS})
-#add_executable(test_api ${rok4apitest_SRCS})
-#add_executable(test_command ${rok4commandtest_SRCS})
 
 
 ########################################
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
-
-
-if(BUILD_OBJECT)
-    set (DEP_INCLUDE_DIR ${DEP_INCLUDE_DIR})
-endif(BUILD_OBJECT)
+set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 #Listes des bibliothèques à lier avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY fcgi tinyxml logger image proj zlib tiff png curl)
-
-if(BUILD_OBJECT)
-    set (DEP_LIBRARY ${DEP_LIBRARY})
-endif(BUILD_OBJECT)
+set(DEP_LIBRARY fcgi tinyxml image proj zlib tiff png curl boostlog boostlogsetup boostthread boostfilesystem boostsystem)
 
 target_link_libraries(rok4core ${DEP_LIBRARY} )
 target_link_libraries(rok4 rok4core)
-#target_link_libraries(test_api rok4core)
-#target_link_libraries(test_command rok4core)
-
-#set_target_properties(test_api PROPERTIES LINKER_LANGUAGE C)
 
 ########################################
 # Gestion des tests unitaires (CPPUnit)

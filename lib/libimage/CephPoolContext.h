@@ -51,7 +51,7 @@
 #define CEPH_POOL_CONTEXT_H
 
 #include <rados/librados.h>
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Context.h"
 
 #define ROK4_CEPH_USERNAME "ROK4_CEPH_USERNAME"
@@ -218,11 +218,11 @@ public:
     std::string getPath(std::string racine,int x,int y,int pathDepth);
 
     virtual void print() {
-        LOGGER_INFO ( "------ Ceph Context -------" );
-        LOGGER_INFO ( "\t- cluster name = " << cluster_name );
-        LOGGER_INFO ( "\t- user name = " << user_name );
-        LOGGER_INFO ( "\t- configuration file = " << conf_file );
-        LOGGER_INFO ( "\t- pool name = " << pool_name );
+        BOOST_LOG_TRIVIAL(info) <<  "------ Ceph Context -------" ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- cluster name = " << cluster_name ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- user name = " << user_name ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- configuration file = " << conf_file ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- pool name = " << pool_name ;
     }
 
     virtual std::string toString() {

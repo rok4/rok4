@@ -174,8 +174,8 @@ public:
         int calcHeight = lround ( ( bounding_box.ymax - bounding_box.ymin ) / ( resolution_y ) );
 
         if ( calcWidth != w || calcHeight != h ) {
-            LOGGER_WARN ( "Warning: height is " << h << " and calculation give " << calcHeight );
-            LOGGER_WARN ( "Warning: width is " << w << " and calculation give " << calcWidth );
+            BOOST_LOG_TRIVIAL(warning) <<  "Warning: height is " << h << " and calculation give " << calcHeight ;
+            BOOST_LOG_TRIVIAL(warning) <<  "Warning: width is " << w << " and calculation give " << calcWidth ;
             return false;
         }
         
@@ -426,10 +426,10 @@ public:
         }
         
         if ( newMask->getWidth() != width || newMask->getHeight() != height || newMask->getChannels() != 1 ) {
-            LOGGER_ERROR ( "Unvalid mask" );
-            LOGGER_ERROR ( "\t - channels have to be 1, it is " << newMask->getChannels() );
-            LOGGER_ERROR ( "\t - width have to be " << width << ", it is " << newMask->getWidth() );
-            LOGGER_ERROR ( "\t - height have to be " << height << ", it is " << newMask->getHeight() );
+            BOOST_LOG_TRIVIAL(error) <<  "Unvalid mask" ;
+            BOOST_LOG_TRIVIAL(error) <<  "\t - channels have to be 1, it is " << newMask->getChannels() ;
+            BOOST_LOG_TRIVIAL(error) <<  "\t - width have to be " << width << ", it is " << newMask->getWidth() ;
+            BOOST_LOG_TRIVIAL(error) <<  "\t - height have to be " << height << ", it is " << newMask->getHeight() ;
             return false;
         }
 
@@ -556,12 +556,12 @@ public:
     bool isCompatibleWith ( Image* pImage ) {
 
         if ( crs.isDefine() && pImage->getCRS().isDefine() && crs != pImage->getCRS() ) {
-            LOGGER_DEBUG ( "Different CRS" );
+            BOOST_LOG_TRIVIAL(debug) <<  "Different CRS" ;
             return false;
         }
 
         if ( getChannels() != pImage->getChannels() ) {
-            LOGGER_DEBUG ( "Different channels" );
+            BOOST_LOG_TRIVIAL(debug) <<  "Different channels" ;
             return false;
         }
 
@@ -569,20 +569,20 @@ public:
         double epsilon_y=__min ( getResY(), pImage->getResY() ) /1000.;
 
         if ( fabs ( getResX()-pImage->getResX() ) > epsilon_x ) {
-            LOGGER_DEBUG ( "Different X resolutions" );
+            BOOST_LOG_TRIVIAL(debug) <<  "Different X resolutions" ;
             return false;
         }
         if ( fabs ( getResY()-pImage->getResY() ) > epsilon_y ) {
-            LOGGER_DEBUG ( "Different Y resolutions" );
+            BOOST_LOG_TRIVIAL(debug) <<  "Different Y resolutions" ;
             return false;
         }
 
         if ( fabs ( getPhaseX()-pImage->getPhaseX() ) > 0.001 && fabs ( getPhaseX()-pImage->getPhaseX() ) < 0.999 ) {
-            LOGGER_DEBUG ( "Different X phasis : " << getPhaseX() << " and " << pImage->getPhaseX() );
+            BOOST_LOG_TRIVIAL(debug) <<  "Different X phasis : " << getPhaseX() << " and " << pImage->getPhaseX() ;
             return false;
         }
         if ( fabs ( getPhaseY()-pImage->getPhaseY() ) > 0.001 && fabs ( getPhaseY()-pImage->getPhaseY() ) < 0.999 ) {
-            LOGGER_DEBUG ( "Different Y phasis : " << getPhaseY() << " and " << pImage->getPhaseY() );
+            BOOST_LOG_TRIVIAL(debug) <<  "Different Y phasis : " << getPhaseY() << " and " << pImage->getPhaseY() ;
             return false;
         }
 
@@ -717,20 +717,20 @@ public:
      * \brief Image description output
      */
     virtual void print() {
-        LOGGER_INFO ( "\t- width = " << width << ", height = " << height );
-        LOGGER_INFO ( "\t- samples per pixel = " << channels );
-        LOGGER_INFO ( "\t- CRS = " << crs.getProj4Code() );
-        LOGGER_INFO ( "\t- bbox = " << bbox.toString() );
-        LOGGER_INFO ( "\t- x resolution = " << resx << ", y resolution = " << resy );
+        BOOST_LOG_TRIVIAL(info) <<  "\t- width = " << width << ", height = " << height ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- samples per pixel = " << channels ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- CRS = " << crs.getProj4Code() ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- bbox = " << bbox.toString() ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- x resolution = " << resx << ", y resolution = " << resy ;
         if ( isMask ) {
-            LOGGER_INFO ( "\t- Is a mask" );
+            BOOST_LOG_TRIVIAL(info) <<  "\t- Is a mask" ;
         } else {
-            LOGGER_INFO ( "\t- Is not a mask" );
+            BOOST_LOG_TRIVIAL(info) <<  "\t- Is not a mask" ;
         }
         if ( mask ) {
-            LOGGER_INFO ( "\t- Own a mask\n" );
+            BOOST_LOG_TRIVIAL(info) <<  "\t- Own a mask\n" ;
         } else {
-            LOGGER_INFO ( "\t- No mask\n" );
+            BOOST_LOG_TRIVIAL(info) <<  "\t- No mask\n" ;
         }
     }
     
@@ -741,7 +741,7 @@ public:
      * \brief Image TFW output
      */
     virtual void printTFW() {
-        LOGGER_INFO ( "TFW : \n" << resx << "\n-" << resy << "\n0\n0\n" << bbox.xmin+0.5*resx << "\n" << bbox.ymax - 0.5*resy );
+        BOOST_LOG_TRIVIAL(info) <<  "TFW : \n" << resx << "\n-" << resy << "\n0\n0\n" << bbox.xmin+0.5*resx << "\n" << bbox.ymax - 0.5*resy ;
     }
 
     /**

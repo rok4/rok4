@@ -39,6 +39,7 @@
 #define WEBSERVICE_H
 #include <string>
 #include <map>
+#include <vector>
 #include "BoundingBox.h"
 #include "curl/curl.h"
 #include "Image.h"
@@ -59,7 +60,7 @@ static size_t WriteInMemoryCallback(void *contents, size_t size, size_t nmemb, v
   mem->memory = (uint8_t*)realloc(mem->memory, mem->size + realsize + 1);
   if(mem->memory == NULL) {
     /* out of memory! */
-    LOGGER_ERROR("not enough memory (realloc returned NULL)\n");
+    BOOST_LOG_TRIVIAL(error) << "not enough memory (realloc returned NULL)\n";
     return 0;
   }
 

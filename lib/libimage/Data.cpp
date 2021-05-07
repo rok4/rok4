@@ -37,7 +37,7 @@
 
 #include "Data.h"
 #include <cstring> // pour memcpy
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 /**
  * Constructeur.

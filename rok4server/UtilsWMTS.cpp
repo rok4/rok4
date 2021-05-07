@@ -54,104 +54,103 @@
 #include <cmath>
 #include "TileMatrixSet.h"
 #include "Pyramid.h"
-#include "intl.h"
 
 
 DataSource* Rok4Server::getTileParamWMTS ( Request* request, Layer*& layer, std::string& str_tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style) {
     // VERSION
     std::string version = request->getParam ( "version" );
     if ( version == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre VERSION absent." ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre VERSION absent.","wmts" ) );
     if ( version.find ( servicesConf->getServiceTypeVersion() ) == std::string::npos )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (doit contenir " ) +servicesConf->getServiceTypeVersion() +_ ( ")" ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Valeur du parametre VERSION invalide (doit contenir " +servicesConf->getServiceTypeVersion() + ")","wmts" ) );
 
     // LAYER
     std::string str_layer = request->getParam ( "layer" );
     if ( str_layer == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre LAYER absent." ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre LAYER absent.","wmts" ) );
     
     if ( Request::containForbiddenChars(str_layer)) {
-        LOGGER_WARN("Forbidden char detected in WMTS layer: " << str_layer);
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer inconnu." ),"wmts" ) );
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMTS layer: " << str_layer;
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Layer inconnu.","wmts" ) );
     }
 
     layer = serverConf->getLayer(str_layer);
     if ( layer == NULL || ! layer->getWMTSAuthorized() )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +str_layer+_ ( " inconnu." ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Layer " +str_layer+ " inconnu.","wmts" ) );
 
 
     // TILEMATRIXSET
     std::string str_tms = request->getParam ( "tilematrixset" );
     if ( str_tms == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIXSET absent." ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre TILEMATRIXSET absent.","wmts" ) );
 
     if ( Request::containForbiddenChars(str_tms)) {
-        LOGGER_WARN("Forbidden char detected in WMTS tilematrixset: " << str_tms);
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrixSet inconnu." ),"wmts" ) );
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMTS tilematrixset: " << str_tms;
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "TileMatrixSet inconnu.","wmts" ) );
     }
 
     TileMatrixSet* tms = serverConf->getTMS(str_tms);
     if ( tms == NULL )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrixSet " ) +str_tms+_ ( " inconnu." ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "TileMatrixSet " +str_tms+ " inconnu.","wmts" ) );
 
     if ( tms->getId() != layer->getDataPyramid()->getTms()->getId() )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIXSET différent de celui de la couche demandée. TILEMATRIXSET devrait être " ) +layer->getDataPyramid()->getTms()->getId(),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre TILEMATRIXSET différent de celui de la couche demandée. TILEMATRIXSET devrait être " +layer->getDataPyramid()->getTms()->getId(),"wmts" ) );
     
     // TILEMATRIX
     str_tileMatrix = request->getParam ( "tilematrix" );
     if ( str_tileMatrix == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIX absent." ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre TILEMATRIX absent.","wmts" ) );
 
     if ( Request::containForbiddenChars(str_tileMatrix)) {
-        LOGGER_WARN("Forbidden char detected in WMTS tilematrix: " << str_tileMatrix);
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrix inconnu pour le TileMatrixSet " ) +str_tms,"wmts" ) );
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMTS tilematrix: " << str_tileMatrix;
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "TileMatrix inconnu pour le TileMatrixSet " +str_tms,"wmts" ) );
     }
 
     if ( tms->getTm(str_tileMatrix) == NULL )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrix " ) +str_tileMatrix+_ ( " inconnu pour le TileMatrixSet " ) +str_tms,"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "TileMatrix " +str_tileMatrix+ " inconnu pour le TileMatrixSet " +str_tms,"wmts" ) );
 
     // TILEROW
     std::string str_TileRow = request->getParam ( "tilerow" );
     if ( str_TileRow == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEROW absent." ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre TILEROW absent.","wmts" ) );
     if ( sscanf ( str_TileRow.c_str(),"%d",&tileRow ) !=1 )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre TILEROW est incorrecte." ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre TILEROW est incorrecte.","wmts" ) );
 
     // TILECOL
     std::string str_TileCol = request->getParam ( "tilecol" );
     if ( str_TileCol == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILECOL absent." ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre TILECOL absent.","wmts" ) );
     if ( sscanf ( str_TileCol.c_str(),"%d",&tileCol ) !=1 )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre TILECOL est incorrecte." ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre TILECOL est incorrecte.","wmts" ) );
 
     // FORMAT
     format = request->getParam ( "format" );
 
-    LOGGER_DEBUG ( _ ( "format requete : " ) << format << _ ( " format pyramide : " ) << Rok4Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) );
+    BOOST_LOG_TRIVIAL(debug) <<   "format requete : " << format <<  " format pyramide : " << Rok4Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) ;
     if ( format == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre FORMAT absent." ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre FORMAT absent.","wmts" ) );
 
     if ( Request::containForbiddenChars(format) ) {
         // On a détecté un caractère interdit, on ne met pas le format fourni dans la réponse pour éviter une injection
-        LOGGER_WARN("Forbidden char detected in WMTS format: " << format);
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le format n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMTS format: " << format;
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Le format n'est pas gere pour la couche " +str_layer,"wmts" ) );
     }
 
     if ( format.compare ( Rok4Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) ) !=0 )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le format " ) +format+_ ( " n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Le format " +format+ " n'est pas gere pour la couche " +str_layer,"wmts" ) );
 
     //Style
 
     std::string str_style = request->getParam ( "style" );
     if ( str_style == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLE absent." ),"wmts" ) );
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre STYLE absent.","wmts" ) );
     // TODO : Nom de style : inspire_common:DEFAULT en mode Inspire sinon default
 
     if (Rok4Format::isRaster(layer->getDataPyramid()->getFormat())) {
         style = layer->getStyleByIdentifier(str_style);
 
         if ( ! ( style ) )
-            return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le style " ) +str_style+_ ( " n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
+            return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Le style " +str_style+ " n'est pas gere pour la couche " +str_layer,"wmts" ) );
     }
 
     return NULL;
@@ -447,11 +446,11 @@ void Rok4Server::buildWMTSCapabilities() {
                     Style* style = layer->getStyles() [i];
                     int j;
                     for ( j=0 ; j < style->getTitles().size(); ++j ) {
-                        LOGGER_DEBUG ( _ ( "Title : " ) << style->getTitles() [j].c_str() );
+                        BOOST_LOG_TRIVIAL(debug) <<   "Title : " << style->getTitles() [j].c_str() ;
                         styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "ows:Title", style->getTitles() [j].c_str() ) );
                     }
                     for ( j=0 ; j < style->getAbstracts().size(); ++j ) {
-                        LOGGER_DEBUG ( _ ( "Abstract : " ) << style->getAbstracts() [j].c_str() );
+                        BOOST_LOG_TRIVIAL(debug) <<   "Abstract : " << style->getAbstracts() [j].c_str() ;
                         styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "ows:Abstract", style->getAbstracts() [j].c_str() ) );
                     }
 
@@ -619,7 +618,7 @@ DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
     std::string version;
     DataStream* errorResp = getCapParamWMTS ( request, version );
     if ( errorResp ) {
-        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getCapabilities" ) );
+        BOOST_LOG_TRIVIAL(error) <<   "Probleme dans les parametres de la requete getCapabilities" ;
         return errorResp;
     }
 
@@ -647,7 +646,7 @@ DataStream* Rok4Server::getCapParamWMTS ( Request* request, std::string& version
         return NULL;
     }
     if ( version.compare ( servicesConf->getServiceTypeVersion() ) !=0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)" ),"wmts" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)","wmts" ) );
 
     return NULL;
 }
@@ -661,56 +660,56 @@ DataStream* Rok4Server::getFeatureInfoParamWMTS ( Request* request, Layer*& laye
         return new DataStreamFromDataSource(getTileError);
     }
     if (layer->isGetFeatureInfoAvailable() == false) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layer->getId()+_ ( " non interrogeable." ),"wmts" ) );   
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Layer " +layer->getId()+ " non interrogeable.","wmts" ) );   
     }
 
     
     // INFO_FORMAT
     info_format = request->getParam ( "infoformat" );
     if ( info_format == "" ){
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFOFORMAT vide." ),"wmts" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre INFOFORMAT vide.","wmts" ) );
     }else{
         if ( Request::containForbiddenChars(info_format)) {
-            LOGGER_WARN("Forbidden char detected in WMTS info_format: " << info_format);
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Info_Format non gere par le service." ),"wmts" ) );
+            BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMTS info_format: " << info_format;
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Info_Format non gere par le service.","wmts" ) );
         }
 
         if ( ! servicesConf->isInInfoFormatList(info_format) )
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Info_Format " ) +info_format+_ ( " non gere par le service." ),"wmts" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Info_Format " +info_format+ " non gere par le service.","wmts" ) );
     }
 
 
     // Comme on va utiliser le niveau requêté pour contrôler les valeurs de I et J, on vérifie bien son existence
     if (layer->getDataPyramid()->getLevel(tileMatrix) == NULL) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre TILEMATRIX n'est pas valide pour cette couche." ),"wmts" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre TILEMATRIX n'est pas valide pour cette couche.","wmts" ) );
     }
 
     // X
     std::string strX = request->getParam ( "i" );
     if ( strX == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre I absent." ),"wmts" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre I absent.","wmts" ) );
     char c;
     if (sscanf(strX.c_str(), "%d%c", &X, &c) != 1) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I n'est pas un entier." ),"wmts" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre I n'est pas un entier.","wmts" ) );
     }
     if ( X<0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I est negative." ),"wmts" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre I est negative.","wmts" ) );
     if ( X> layer->getDataPyramid()->getLevel(tileMatrix)->getTm()->getTileW()-1 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I est superieure a la largeur de la tuile (width)." ),"wmts" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre I est superieure a la largeur de la tuile (width).","wmts" ) );
 
 
     // Y
     std::string strY = request->getParam ( "j" );
     if ( strY == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre J absent." ),"wmts" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre J absent.","wmts" ) );
 
     if (sscanf(strY.c_str(), "%d%c", &Y, &c) != 1) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J n'est pas un entier." ),"wmts" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre J n'est pas un entier.","wmts" ) );
     }
     if ( Y<0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J est negative." ),"wmts" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre J est negative.","wmts" ) );
     if ( Y> layer->getDataPyramid()->getLevel(tileMatrix)->getTm()->getTileH()-1 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J est superieure a la hauteur de la tuile (height)." ),"wmts" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre J est superieure a la hauteur de la tuile (height).","wmts" ) );
 
     return NULL;
 }

@@ -164,11 +164,11 @@ public:
      * \brief JPEG2000 image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "---------- LibopenjpegImage ------------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "---------- LibopenjpegImage ------------" ;
         FileImage::print();
-        //LOGGER_INFO ( "\t- info sup : " << info sup );
-        LOGGER_INFO ( "" );
+        //BOOST_LOG_TRIVIAL(info) <<  "\t- info sup : " << info sup ;
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
     }
 
 };

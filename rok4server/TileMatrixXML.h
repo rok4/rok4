@@ -47,7 +47,6 @@ class TileMatrixXML;
 #include "TileMatrix.h"
 
 #include "config.h"
-#include "intl.h"
 
 class TileMatrixXML : public DocumentXML
 {

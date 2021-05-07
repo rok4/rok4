@@ -46,7 +46,7 @@
 #include <map>
 
 #include "ServiceException.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "config.h"
 
 std::string ServiceException::getCodeAsString ( ExceptionCode code ) {

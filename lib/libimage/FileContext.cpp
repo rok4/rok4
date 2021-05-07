@@ -64,20 +64,20 @@ bool FileContext::connection() {
 
 int FileContext::read(uint8_t* data, int offset, int size, std::string name) {
     std::string fullName = root_dir + name;
-    LOGGER_DEBUG("File read : " << size << " bytes (from the " << offset << " one) in the file " << fullName);
+    BOOST_LOG_TRIVIAL(debug) << "File read : " << size << " bytes (from the " << offset << " one) in the file " << fullName;
 
     // Ouverture du fichier
     int fildes = open( fullName.c_str(), O_RDONLY );
     if ( fildes < 0 ) {
-        LOGGER_DEBUG ( "Can't open file " << fullName );
+        BOOST_LOG_TRIVIAL(debug) <<  "Can't open file " << fullName ;
         return -1;
     }
 
     size_t read_size = pread ( fildes, data, size, offset );
 
     if ( read_size != size ) {
-        LOGGER_ERROR ( "Impossible de lire la tuile dans le fichier " << fullName );
-        if ( read_size<0 ) LOGGER_ERROR ( "Code erreur="<<errno );
+        BOOST_LOG_TRIVIAL(error) <<  "Impossible de lire la tuile dans le fichier " << fullName ;
+        if ( read_size<0 ) BOOST_LOG_TRIVIAL(error) <<  "Code erreur="<<errno ;
         close ( fildes );
         return -1;
     }
@@ -90,10 +90,10 @@ int FileContext::read(uint8_t* data, int offset, int size, std::string name) {
 
 bool FileContext::write(uint8_t* data, int offset, int size, std::string name) {
     std::string fullName = root_dir + name;
-    LOGGER_DEBUG("File write : " << size << " bytes (from the " << offset << " one) in the file " << fullName);
+    BOOST_LOG_TRIVIAL(debug) << "File write : " << size << " bytes (from the " << offset << " one) in the file " << fullName;
 
     if ( !output ) {
-        LOGGER_ERROR("Not open output file " << fullName);
+        BOOST_LOG_TRIVIAL(error) << "Not open output file " << fullName;
         return false;
     }
 
@@ -107,10 +107,10 @@ bool FileContext::write(uint8_t* data, int offset, int size, std::string name) {
 
 bool FileContext::writeFull(uint8_t* data, int size, std::string name) {
     std::string fullName = root_dir + name;
-    LOGGER_DEBUG("File write : " << size << " bytes (one shot) in the file " << fullName);
+    BOOST_LOG_TRIVIAL(debug) << "File write : " << size << " bytes (one shot) in the file " << fullName;
 
     if ( !output ) {
-        LOGGER_ERROR("Not open output file " << fullName);
+        BOOST_LOG_TRIVIAL(error) << "Not open output file " << fullName;
         return false;
     }
 

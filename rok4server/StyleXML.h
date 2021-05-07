@@ -47,7 +47,6 @@ class StyleXML;
 #include "DocumentXML.h"
 
 #include "config.h"
-#include "intl.h"
 
 class StyleXML : public DocumentXML
 {

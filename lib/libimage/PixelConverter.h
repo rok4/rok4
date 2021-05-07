@@ -48,7 +48,7 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <Logger.h>
+#include <boost/log/trivial.hpp>
 #include <Utils.h>
 #include "Format.h"
 
@@ -122,25 +122,25 @@ public:
         yesWeCan = false;
         
         if (inSampleFormat == SampleFormat::FLOAT || outSampleFormat == SampleFormat::FLOAT) {
-            LOGGER_WARN("PixelConverter doesn't handle float samples");
+            BOOST_LOG_TRIVIAL(warning) << "PixelConverter doesn't handle float samples";
             return;
         }
         if (inSampleFormat != outSampleFormat) {
-            LOGGER_WARN("PixelConverter doesn't handle different samples format");
+            BOOST_LOG_TRIVIAL(warning) << "PixelConverter doesn't handle different samples format";
             return;
         }
         if (inBitsPerSample != outBitsPerSample) {
-            LOGGER_WARN("PixelConverter doesn't handle different number of bits per sample");
+            BOOST_LOG_TRIVIAL(warning) << "PixelConverter doesn't handle different number of bits per sample";
             return;
         }
 
         if (inSamplesPerPixel == outSamplesPerPixel) {
-            LOGGER_WARN("PixelConverter have not to be used if number of samples per pixel is the same");
+            BOOST_LOG_TRIVIAL(warning) << "PixelConverter have not to be used if number of samples per pixel is the same";
             return;
         }
 
         if (inBitsPerSample != 8) {
-            LOGGER_WARN("PixelConverter only handle 8 bits sample");
+            BOOST_LOG_TRIVIAL(warning) << "PixelConverter only handle 8 bits sample";
             return;
         }
 
@@ -184,13 +184,13 @@ public:
      * \~english \brief Print converter's values
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "---------- PixelConverter ------------" );
-        LOGGER_INFO ( "\t- Width : " << width );
-        LOGGER_INFO ( "\t- SampleFormat : " << SampleFormat::toString(inSampleFormat) << " -> " << SampleFormat::toString(outSampleFormat) );
-        LOGGER_INFO ( "\t- Bits per sample : " << inBitsPerSample << " -> " << outBitsPerSample );
-        LOGGER_INFO ( "\t- Samples per pixel : " << inSamplesPerPixel << " -> " << outSamplesPerPixel );
-        LOGGER_INFO ( "" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "---------- PixelConverter ------------" ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Width : " << width ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- SampleFormat : " << SampleFormat::toString(inSampleFormat) << " -> " << SampleFormat::toString(outSampleFormat) ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Bits per sample : " << inBitsPerSample << " -> " << outBitsPerSample ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Samples per pixel : " << inSamplesPerPixel << " -> " << outSamplesPerPixel ;
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
     }
 
     /**

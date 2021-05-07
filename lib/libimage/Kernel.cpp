@@ -45,7 +45,7 @@
 
 #include <cmath>
 #include "Kernel.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 int Kernel::weight ( float* W, int& length, double x, int max ) const {
 

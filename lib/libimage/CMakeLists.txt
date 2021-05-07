@@ -36,7 +36,8 @@ endif(DEBUG_BUILD)
 CONFIGURE_FILE(Jpeg2000_library_config.h.in Jpeg2000_library_config.h ESCAPE_QUOTES @ONLY)
 
 SET(
-    libimage_SRCS Context.cpp Palette.cpp Data.cpp Decoder.cpp PenteImage.cpp AspectImage.cpp
+    libimage_SRCS 
+    Context.cpp Palette.cpp Data.cpp Decoder.cpp PenteImage.cpp AspectImage.cpp
     FileImage.cpp Jpeg2000Image.cpp LibtiffImage.cpp LibpngImage.cpp LibjpegImage.cpp Rok4Image.cpp BilzImage.cpp
     ReprojectedImage.cpp ResampledImage.cpp Kernel.cpp Interpolation.cpp DecimatedImage.cpp
     MirrorImage.cpp StyledImage.cpp EstompageImage.cpp Estompage.cpp
@@ -46,7 +47,7 @@ SET(
     FileContext.cpp CurlPool.cpp 
     PaletteConfig.cpp PaletteDataSource.cpp
     Format.cpp TiffHeaderDataSource.cpp StoreDataSource.cpp
-    ConvertedChannelsImage.cpp
+    ConvertedChannelsImage.cpp ContextBook.cpp
 )
 
 # OPTION : 'sources' JPEG2000
@@ -59,7 +60,7 @@ ELSE(KDU_USE)
 ENDIF(KDU_USE)
 
 IF(BUILD_OBJECT)
-  SET(libimage_SRCS ${libimage_SRCS} ContextBook.cpp CephPoolContext.cpp SwiftContext.cpp S3Context.cpp)
+  SET(libimage_SRCS ${libimage_SRCS} CephPoolContext.cpp SwiftContext.cpp S3Context.cpp)
 ENDIF(BUILD_OBJECT)
 
 ADD_LIBRARY(image STATIC ${libimage_SRCS})
@@ -69,7 +70,7 @@ ADD_LIBRARY(image STATIC ${libimage_SRCS})
 
 INCLUDE(ROK4Dependencies)
 
-SET(DEP_INCLUDE_DIR ${TURBOJPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} ${JPEG2000_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
+SET(DEP_INCLUDE_DIR ${TURBOJPEG_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} ${JPEG2000_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
 
 IF(BUILD_OBJECT)
   SET(DEP_INCLUDE_DIR ${DEP_INCLUDE_DIR} ${RADOS_INCLUDE_DIR})
@@ -79,7 +80,7 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DE
 
 ########################################
 # Listes des bibliothèques à liées avec l'éxecutable
-SET(DEP_LIBRARY logger proj turbojpeg jpeg zlib tiff lzw pkb png jpeg2000 curl openssl crypto)
+SET(DEP_LIBRARY proj turbojpeg jpeg zlib tiff lzw pkb png jpeg2000 curl openssl crypto)
 
 IF(BUILD_OBJECT)
   SET(DEP_LIBRARY ${DEP_LIBRARY} rados)
