@@ -79,6 +79,7 @@ La pyramide en sortie aura ces caractéristiques et les pyramides sources devron
 | SWIFT            | `pyr_data_container_name` | Conteneur de stockage des données de la pyramide sur le cluster Swift       | obligatoire                      |
 
 Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution :
+
 * CEPH
     - `ROK4_CEPH_CONFFILE`
     - `ROK4_CEPH_USERNAME`
@@ -127,6 +128,7 @@ image_height = 16
 | `merge_method`     | Précise comment procéder lorsqu'une même dalle est trouvée dans plusieurs pyramides sources             | obligatoire                                                      |
 
 Valeurs pour `merge_method` :
+
 * `replace` : seule la dalle dans la pyramide source la plus prioritaire est retenue, ce qui permet éventuellement de faire un lien symbolique
 * `top` : on calcule la dalle résultante en ne conservant que le pixel de donnée de la dalle la plus prioritaire. N'est intéressant par rapport à TOP que si les dalles sources sont accompagnées de masques de données.
 ![Merge Top](../../../docs/images/ROK4GENERATION/merge_method_top_mask.png)
@@ -155,6 +157,7 @@ use_masks = TRUE
 ### Section `extents`
 
 Cette section permet de définir les zones d'utilisation des pyramides source. La clé du paramètre sera l'identifiant unique de cette zone et la valeur sera :
+
 * Soit un rectangle englobant, dans la projection des pyramides (sources et en sortie)
 * Soit le chemin vers un fichier contenant une géométrie en WKT, GeoJSON ou GML.
 
@@ -171,6 +174,7 @@ FXX = /home/IGN/fxx.wkt
 ### Section `composition`
 
 On liste par niveau et étendue la ou les pyramides à utiliser, en définissant implicitement l'ordre de priorité. Les paramètres sont fournis sous la forme `<niveau>.<zone> = <chemin vers le descripteur de la pyramide 1>[,<chemin vers le descripteur de la pyramide 2>]` :
+
 * `<niveau>` est l'identifiant (défini dans le TMS) du niveau pour lequel utiliser cette ou ces pyramides
 * `<zone>` est l'identifiant de la zone (défini dans la section `extents`) sur laquelle utiliser cette ou ces pyramides
 * La liste des chemins vers les descripteurs des pyramides à utiliser définit la priorité : la pyramide citée en première sera prioritaire, ses dalles seront "au dessus" dans les fusions éventuelles de dalles.
@@ -186,6 +190,7 @@ Il est aussi possible de définir sur plusieurs lignes :
 ```
 
 Les pyramides sources doivent :
+
 * utiliser le même TMS que la pyramide de sortie (donc toutes les pyramides manipulées dans cette outil respecte le même TMS)
 * utiliser le même nombre de tuiles par dalle que la pyramide de sortie
 * avoir le même format de canal que la pyramide de sortie (entier sur 8 bits non signé ou flottant sur 32 bits)
@@ -205,6 +210,7 @@ Les pyramides sources doivent :
 ## Résumé des fichiers et dossiers manipulés
 
 Avec les configurations mises en exemple :
+
 * La configuration principale `/home/IGN/conf.txt`
 * Le TMS `/home/IGN/TMS/PM.tms`
 * Le fichier de logs `/var/log/joinCache_2019-02-01.txt`
