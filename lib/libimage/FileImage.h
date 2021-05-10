@@ -414,20 +414,20 @@ public:
      */
     void print() {
         Image::print();
-        LOGGER_INFO ( "\t- File name : " << filename );
-        LOGGER_INFO ( "\t- Compression : " << Compression::toString ( compression ) );
-        LOGGER_INFO ( "\t- Photometric : " << Photometric::toString ( photometric ) );
-        LOGGER_INFO ( "\t- Bits per sample : " << bitspersample );
-        LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString ( sampleformat ) );
-        if (esType == ExtraSample::ALPHA_ASSOC) LOGGER_INFO ( "\t- Alpha have to be unassociated");
+        BOOST_LOG_TRIVIAL(info) <<  "\t- File name : " << filename ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Compression : " << Compression::toString ( compression ) ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Photometric : " << Photometric::toString ( photometric ) ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Bits per sample : " << bitspersample ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Sample format : " << SampleFormat::toString ( sampleformat ) ;
+        if (esType == ExtraSample::ALPHA_ASSOC) BOOST_LOG_TRIVIAL(info) <<  "\t- Alpha have to be unassociated";
         if (converter) {
-            LOGGER_INFO ( "\tWith pixel converter: " );
-            LOGGER_INFO ( "\t\tSample format: " << SampleFormat::toString(converter->getSampleFormat()) );
-            LOGGER_INFO ( "\t\tBits per sample: " << converter->getBitsPerSample() );
-            LOGGER_INFO ( "\t\tSamples per pixel: " << converter->getSamplesPerPixel() );
-            LOGGER_INFO ( "\t\tPixel size: " << converter->getBitsPerSample() * converter->getSamplesPerPixel() / 8 );
+            BOOST_LOG_TRIVIAL(info) <<  "\tWith pixel converter: " ;
+            BOOST_LOG_TRIVIAL(info) <<  "\t\tSample format: " << SampleFormat::toString(converter->getSampleFormat()) ;
+            BOOST_LOG_TRIVIAL(info) <<  "\t\tBits per sample: " << converter->getBitsPerSample() ;
+            BOOST_LOG_TRIVIAL(info) <<  "\t\tSamples per pixel: " << converter->getSamplesPerPixel() ;
+            BOOST_LOG_TRIVIAL(info) <<  "\t\tPixel size: " << converter->getBitsPerSample() * converter->getSamplesPerPixel() / 8 ;
         }
-        LOGGER_INFO ( "" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
     }
 };
 

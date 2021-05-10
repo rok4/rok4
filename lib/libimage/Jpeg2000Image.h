@@ -125,7 +125,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( Image* pIn ) {
-        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write JPEG2000 image" ;
         return -1;
     }
 
@@ -137,7 +137,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( uint8_t* buffer ) {
-        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write JPEG2000 image" ;
         return -1;
     }
 
@@ -149,7 +149,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( uint16_t* buffer ) {
-        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write JPEG2000 image" ;
         return -1;
     }
 
@@ -161,7 +161,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( float* buffer)  {
-        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write JPEG2000 image" ;
         return -1;
     }
 
@@ -174,7 +174,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( uint8_t* buffer, int line ) {
-        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write JPEG2000 image" ;
         return -1;
     }
 
@@ -187,7 +187,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( uint16_t* buffer, int line ) {
-        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write JPEG2000 image" ;
         return -1;
     }
 
@@ -200,7 +200,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( float* buffer, int line) {
-        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write JPEG2000 image" ;
         return -1;
     }
 

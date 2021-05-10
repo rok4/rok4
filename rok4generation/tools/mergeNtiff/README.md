@@ -7,6 +7,7 @@
 Cet outil génère une image, définie par son rectangle englobant, sa projection et la résolution pixel, à partir d'images géoréférencées. Ces dernières peuvent avoir des projections et des résolutions différentes, se recouvrir, ne pas recouvrir l'intégralité de l'image en sortie, avoir des caractéristiques différentes. Cet outil est utilisé pour générer le niveau le mieux résolu dans une pyramide à partir des images en entrée.
 
 Les informations sur les canaux (nombre, taille en bits et format) peuvent :
+
 * être fournies et des conversions à la volée seront potentiellement faites sur les images n'ayant pas les mêmes
 * ne pas être fournies, auquel cas toutes les images en entrée doivent avoir les même caractéristiques
 

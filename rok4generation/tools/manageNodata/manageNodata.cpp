@@ -73,7 +73,14 @@ using namespace std;
 
 #include "TiffNodataManager.h"
 #include "Format.h"
-#include "Logger.h"
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/utility/setup/console.hpp>
+namespace logging = boost::log;
+namespace keywords = boost::log::keywords;
+
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
@@ -110,7 +117,7 @@ std::string help = std::string("\nmanageNodata version ") + std::string(ROK4_VER
  * \details L'affichage se fait dans la sortie d'erreur
  */
 void usage() {
-    LOGGER_INFO (help);
+    BOOST_LOG_TRIVIAL(info) << help;
 }
 
 /**
@@ -120,7 +127,7 @@ void usage() {
  * \param[in] errorCode code de retour, -1 par défaut
  */
 void error ( std::string message, int errorCode = -1 ) {
-    LOGGER_ERROR ( message );
+    BOOST_LOG_TRIVIAL(error) <<  message ;
     usage();
     sleep ( 1 );
     exit ( errorCode );
@@ -158,17 +165,13 @@ int main ( int argc, char* argv[] ) {
     bool debugLogger=false;
 
     /* Initialisation des Loggers */
-    Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
-
-    Accumulator* acc = new StreamAccumulator();
-    Logger::setAccumulator ( INFO , acc );
-    Logger::setAccumulator ( WARN , acc );
-    Logger::setAccumulator ( ERROR, acc );
-    Logger::setAccumulator ( FATAL, acc );
-
-    std::ostream &logw = LOGGER ( WARN );
-    logw.precision ( 16 );
-    logw.setf ( std::ios::fixed,std::ios::floatfield );
+    boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::info );
+    logging::add_common_attributes();
+    boost::log::register_simple_formatter_factory< boost::log::trivial::severity_level, char >("Severity");
+    logging::add_console_log (
+        std::cout,
+        keywords::format = "%Severity%\t%Message%"
+    );
 
     for ( int i = 1; i < argc; i++ ) {
 
@@ -241,10 +244,7 @@ int main ( int argc, char* argv[] ) {
 
     if (debugLogger) {
         // le niveau debug du logger est activé
-        Logger::setAccumulator ( DEBUG, acc);
-        std::ostream &logd = LOGGER ( DEBUG );
-        logd.precision ( 16 );
-        logd.setf ( std::ios::fixed,std::ios::floatfield );
+        boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::debug );
     }
 
     /***************** VERIFICATION DES PARAMETRES FOURNIS *********************/
@@ -252,7 +252,7 @@ int main ( int argc, char* argv[] ) {
     if ( ! inputImage ) error ( "Missing input file",-1 );
 
     if ( ! outputImage ) {
-        LOGGER_INFO ( "If the input image have to be modify, it will be overwrite" );
+        BOOST_LOG_TRIVIAL(info) <<  "If the input image have to be modify, it will be overwrite" ;
         outputImage = new char[sizeof ( inputImage ) +1];
         memcpy ( outputImage, inputImage, sizeof ( inputImage ) );
     }
@@ -271,7 +271,7 @@ int main ( int argc, char* argv[] ) {
     int* newData = new int[channels];
 
     /***************** INTERPRETATION DES COULEURS FOURNIES ********************/
-    LOGGER_DEBUG ( "Color interpretation" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Color interpretation" ;
 
     // Target value
     char* charValue = strtok ( strTargetValue,"," );
@@ -328,26 +328,22 @@ int main ( int argc, char* argv[] ) {
     /******************* APPEL A LA CLASSE TIFFNODATAMANAGER *******************/
 
     if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
-        LOGGER_DEBUG ( "Target color treatment (uint8)" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Target color treatment (uint8)" ;
         TiffNodataManager<float> TNM ( channels, targetValue, touchEdges, newData, newNodata, tolerance );
         if ( ! TNM.treatNodata ( inputImage, outputImage, outputMask ) ) {
             error ( "Error : unable to treat nodata for this 8-bit integer image : " + string ( inputImage ), -1 );
         }
     } else if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        LOGGER_DEBUG ( "Target color treatment (float)" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Target color treatment (float)" ;
         TiffNodataManager<uint8_t> TNM ( channels, targetValue, touchEdges, newData, newNodata, tolerance );
         if ( ! TNM.treatNodata ( inputImage, outputImage, outputMask ) ) {
             error ( "Error : unable to treat nodata for this 32-bit float image : " + string ( inputImage ), -1 );
         }
     }
 
-    LOGGER_DEBUG ( "Clean" );
-    // Suppression du nettoyage du logger jusqu'à sa refonte
-    // Logger::stopLogger();
-    // if ( acc ) {
-    //     delete acc;
-    // }
+    BOOST_LOG_TRIVIAL(debug) <<  "Clean" ;
     delete[] targetValue;
+    delete[] outputImage;
     delete[] newData;
     delete[] newNodata;
 

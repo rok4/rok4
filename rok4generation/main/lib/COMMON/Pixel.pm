@@ -256,25 +256,25 @@ sub convertible {
     # Les tests de faisabilité ici doivent être identiques à ceux dans PixelConverter :
     # ----------------------------- PixelConverter constructor : C++ ----------------------------------
     # if (inSampleFormat == SampleFormat::FLOAT || outSampleFormat == SampleFormat::FLOAT) {
-    #     LOGGER_WARN("PixelConverter doesn't handle float samples");
+    #     BOOST_LOG_TRIVIAL(warning) << "PixelConverter doesn't handle float samples";
     #     return;
     # }
     # if (inSampleFormat != outSampleFormat) {
-    #     LOGGER_WARN("PixelConverter doesn't handle different samples format");
+    #     BOOST_LOG_TRIVIAL(warning) << "PixelConverter doesn't handle different samples format";
     #     return;
     # }
     # if (inBitsPerSample != outBitsPerSample) {
-    #     LOGGER_WARN("PixelConverter doesn't handle different number of bits per sample");
+    #     BOOST_LOG_TRIVIAL(warning) << "PixelConverter doesn't handle different number of bits per sample";
     #     return;
     # }
 
     # if (inSamplesPerPixel == outSamplesPerPixel) {
-    #     LOGGER_WARN("PixelConverter have not to be used if number of samples per pixel is the same");
+    #     BOOST_LOG_TRIVIAL(warning) << "PixelConverter have not to be used if number of samples per pixel is the same";
     #     return;
     # }
 
     # if (inBitsPerSample != 8) {
-    #     LOGGER_WARN("PixelConverter only handle 8 bits sample");
+    #     BOOST_LOG_TRIVIAL(warning) << "PixelConverter only handle 8 bits sample";
     #     return;
     # }
     # -------------------------------------------------------------------------------------------------

@@ -37,7 +37,7 @@
 
 #include "StyledImage.h"
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 int StyledImage::getline ( float* buffer, int line ) {
     //Styled image do not translate to float

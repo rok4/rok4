@@ -66,7 +66,6 @@
 #include <errno.h>
 #include <time.h>
 #include "config.h"
-#include "intl.h"
 #include "TiffEncoder.h"
 #include "CurlPool.h"
 #include "PNGEncoder.h"
@@ -76,7 +75,7 @@
 #include "Format.h"
 #include "Message.h"
 #include "StyledImage.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "TileMatrixSet.h"
 #include "Layer.h"
 #include "ServiceException.h"
@@ -107,7 +106,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
     FCGX_Request fcgxRequest;
     if ( FCGX_InitRequest ( &fcgxRequest, server->sock, FCGI_FAIL_ACCEPT_ON_INTR ) != 0 ) {
-        LOGGER_FATAL ( _ ( "Le listener FCGI ne peut etre initialise" ) );
+        BOOST_LOG_TRIVIAL(fatal) << "FCGI listener cannot be initialized" ;
     }
 
     while ( server->isRunning() ) {
@@ -116,16 +115,16 @@ void* Rok4Server::thread_loop ( void* arg ) {
         int rc;
         if ( ( rc=FCGX_Accept_r ( &fcgxRequest ) ) < 0 ) {
             if ( rc == -4 ) { // Cas du redémarrage
-                LOGGER_DEBUG ( _ ( "Redémarrage : FCGX_InitRequest renvoie le code d'erreur " ) << rc );
+                BOOST_LOG_TRIVIAL(debug) << "Reload : FCGX_InitRequest returns error code " << rc ;
             } else {
-                LOGGER_ERROR ( _ ( "FCGX_InitRequest renvoie le code d'erreur " ) << rc );
-                std::cerr <<"FCGX_InitRequest renvoie le code d'erreur " << rc << std::endl;
+                BOOST_LOG_TRIVIAL(error) << "FCGX_InitRequest returns error code " << rc ;
+                std::cerr <<"FCGX_InitRequest returns error code " << rc << std::endl;
             }
             
             break;
         }
 
-        LOGGER_DEBUG("Thread " << pthread_self() << " traite une requete");
+        BOOST_LOG_TRIVIAL(debug) << "Thread " << pthread_self() << " process a request";
 
         bool postRequest = false;
         if (server->servicesConf->isPostEnabled() && strcmp ( FCGX_GetParam ( "REQUEST_METHOD",fcgxRequest.envp ),"POST" ) == 0) {
@@ -140,7 +139,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
             }
             free ( contentBuffer );
             contentBuffer= NULL;
-            LOGGER_DEBUG ( _ ( "Request Content :" ) << std::endl << content );
+            BOOST_LOG_TRIVIAL(debug) << "Request Content :" << std::endl << content ;
             request = new Request (
                 FCGX_GetParam ( "QUERY_STRING", fcgxRequest.envp ),
                 FCGX_GetParam ( "HTTP_HOST", fcgxRequest.envp ),
@@ -168,14 +167,13 @@ void* Rok4Server::thread_loop ( void* arg ) {
         FCGX_Finish_r ( &fcgxRequest );
         FCGX_Free ( &fcgxRequest,1 );
 
-        LOGGER_DEBUG("Thread " << pthread_self() << " en a fini avec la requete");
+        BOOST_LOG_TRIVIAL(debug) << "Thread " << pthread_self() << " finished processing the request";
 
         server->parallelProcess->checkCurrentPid();
 
     }
 
-    LOGGER_DEBUG ( _ ( "Extinction du thread" ) );
-    Logger::stopLogger();
+    BOOST_LOG_TRIVIAL(debug) << "Thread extinction" ;
     return 0;
 }
 
@@ -191,19 +189,19 @@ Rok4Server::Rok4Server (  ServerXML* serverXML, ServicesXML* servicesXML) {
     running = false;
 
     if ( serverConf->supportWMS ) {
-        LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.3.0" ) );
+        BOOST_LOG_TRIVIAL(debug) << "Build WMS Capabilities 1.3.0" ;
         buildWMS130Capabilities();
         //---- WMS 1.1.1
-        LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.1.1" ) );
+        BOOST_LOG_TRIVIAL(debug) << "Build WMS Capabilities 1.1.1" ;
         buildWMS111Capabilities();
         //----
     }
     if ( serverConf->supportWMTS ) {
-        LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
+        BOOST_LOG_TRIVIAL(debug) << "Build WMTS Capabilities" ;
         buildWMTSCapabilities();
     }
     if ( serverConf->supportTMS ) {
-        LOGGER_DEBUG ( _ ( "Build TMS Capabilities" ) );
+        BOOST_LOG_TRIVIAL(debug) << "Build TMS Capabilities" ;
         buildTMSCapabilities();
     }
     //initialize processFactory
@@ -228,7 +226,7 @@ Rok4Server::~Rok4Server() {
 void Rok4Server::initFCGI() {
     int init=FCGX_Init();
     if ( ! serverConf->socket.empty() ) {
-        LOGGER_INFO ( _ ( "Listening on " ) << serverConf->socket );
+        BOOST_LOG_TRIVIAL(info) << "Listening on " << serverConf->socket ;
         sock = FCGX_OpenSocket ( serverConf->socket.c_str(), serverConf->backlog );
     }
 }
@@ -274,7 +272,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     // Récupération des paramètres
     DataStream* errorResp = getMapParamWMS ( request, layers, bbox, width, height, crs, format ,styles, format_option, dpi );
     if ( errorResp ) {
-        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getMap" ) );
+        BOOST_LOG_TRIVIAL(error) << "getMap request parameters issue" ;
         return errorResp;
     }
 
@@ -288,13 +286,13 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 switch ( error ) {
 
                 case 1: {
-                    return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox invalide" ),"wms" ) );
+                    return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "invalid bbox","wms" ) );
                 }
                 case 2: {
-                    return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox trop grande" ),"wms" ) );
+                    return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "bbox too huge","wms" ) );
                 }
                 default : {
-                    return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
+                    return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE, "Cannot reply to the request","wms" ) );
                 }
                 }
             }
@@ -303,13 +301,13 @@ DataStream* Rok4Server::getMap ( Request* request ) {
             curImage->setCRS(crs);
             Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
             Style* style = styles.at(i);
-            LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
+            BOOST_LOG_TRIVIAL(debug) << "GetMap style : " << styles.at ( i )->getId() <<  " pal size : " <<styles.at ( i )->getPalette()->getPalettePNGSize() ;
 
 
             Image *image = styleImage(curImage, pyrType, style, format, layers.size(), layers.at(i)->getDataPyramid());
 
             if (image == 0) {
-                return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
+                return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE, "Cannot reply to the request","wms" ) );
             }
 
             images.push_back ( image );
@@ -333,14 +331,14 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
 
     if ( servicesConf->isFullStyleCapable() ) {
         if ( style->isEstompage() ) {
-            LOGGER_DEBUG ( _ ( "Estompage" ) );
+            BOOST_LOG_TRIVIAL(debug) << "Estompage" ;
 
             int error=0;
             BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
             expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),style->getInterpolationOfEstompage(),0,error);
 
             if (expandedImage == 0) {
-                LOGGER_ERROR("expanded Image is NULL");
+                BOOST_LOG_TRIVIAL(error) << "expanded Image is NULL";
                 delete curImage;
                 return NULL;
             }
@@ -379,7 +377,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),style->getInterpolationOfPente(),0,error);
 
             if (expandedImage == 0) {
-                LOGGER_ERROR("expanded Image is NULL");
+                BOOST_LOG_TRIVIAL(error) << "expanded Image is NULL";
                 delete curImage;
                 return NULL;
             }
@@ -418,7 +416,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::LINEAR,0,error);
 
             if (expandedImage == 0) {
-                LOGGER_ERROR("expanded Image is NULL");
+                BOOST_LOG_TRIVIAL(error) << "expanded Image is NULL";
                 delete curImage;
                 return NULL;
             }
@@ -550,7 +548,7 @@ Image * Rok4Server::mergeImages(std::vector<Image*> images, Rok4Format::eformat_
 	image = MIF.createMergeImage(images,spp,bg,transparentColor,Merge::ALPHATOP);
 
         if ( image == NULL ) {
-            LOGGER_ERROR ( "Impossible de fusionner les images des differentes couches" );
+            BOOST_LOG_TRIVIAL(error) <<  "Impossible de fusionner les images des differentes couches" ;
             return NULL;
         }
     }
@@ -631,15 +629,15 @@ DataStream * Rok4Server::formatImage(Image *image, std::string format, Rok4Forma
     } else if ( format == "text/asc" ) {
         // On ne traite le format asc que sur les image à un seul channel
         if (image->getChannels() != 1){
-            LOGGER_ERROR ( "Le format "<<format<<" ne concerne que les images à 1 canal" );
+            BOOST_LOG_TRIVIAL(error) <<  "Le format "<<format<<" ne concerne que les images à 1 canal" ;
         }else{
             return new AscEncoder ( image );
         }
     }
 
-    LOGGER_ERROR ( "Le format "<<format<<" ne peut etre traite" );
+    BOOST_LOG_TRIVIAL(error) <<  "Le format "<<format<<" ne peut etre traite" ;
 
-    return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Le format " ) +format+_ ( " ne peut etre traite" ),"wms" ) );
+    return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT, "Le format " +format+ " ne peut etre traite","wms" ) );
 
 }
 
@@ -666,7 +664,7 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     Level* level = L->getDataPyramid()->getLevel(tileMatrix);
     if (level == NULL) {
         // On est hors niveau -> erreur
-        return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+        return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND,  "No data found", "wmts" ) );
     }
 
     DataSource* tileSource;
@@ -674,7 +672,7 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     if (tileRow < level->getMinTileRow() || tileRow > level->getMaxTileRow()
             || tileCol < level->getMinTileCol() || tileCol > level->getMaxTileCol()) {
         // On est hors tuiles -> erreur
-        return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+        return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND,  "No data found", "wmts" ) );
     }
 
     if (level->isOnFly()) {
@@ -722,10 +720,10 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     int bSize = 0;
     std::vector <Source*> bSources;
 
-    LOGGER_INFO("GetTileOnDemand");
+    BOOST_LOG_TRIVIAL(info) << "GetTileOnDemand";
 
     //Calcul des paramètres nécessaires
-    LOGGER_DEBUG("Compute parameters");
+    BOOST_LOG_TRIVIAL(debug) << "Compute parameters";
     Pyramid * pyr = L->getDataPyramid();
     CRS dst_crs = pyr->getTms()->getCrs();
     error = 0;
@@ -735,7 +733,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     //--------------------------------------------------------------------------------------------------------
     //Suite du calcul des paramètres nécessaires
     //calcul de la bbox
-    LOGGER_DEBUG("Compute BBOX");
+    BOOST_LOG_TRIVIAL(debug) << "Compute BBOX";
     BoundingBox<double> bbox = lev->tileIndicesToTileBbox(tileCol,tileRow) ;
     bbox.print();
     //width and height and channels
@@ -746,7 +744,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
     //--------------------------------------------------------------------------------------------------------
     //CREATION DE L'IMAGE
-    LOGGER_DEBUG("Create Image");
+    BOOST_LOG_TRIVIAL(debug) << "Create Image";
 
     bSources = lev->getSources();
     bSize = bSources.size();
@@ -782,20 +780,20 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
                         image = styleImage(curImage, pyrType, bStyle, format, bSize, bPyr);
                         images.push_back ( image );
                     } else {
-                        LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
-                        return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+                        BOOST_LOG_TRIVIAL(error) << "Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile";
+                        return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE, "Impossible de repondre a la requete","wmts" ) );
                     }
 
                 } else {
 
-                    LOGGER_DEBUG("Incohérence des bbox: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle());
+                    BOOST_LOG_TRIVIAL(debug) << "Incohérence des bbox: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle();
 
                 }
 
             } else {
                 //on n'a pas pu reprojeter les bbox
 
-                LOGGER_DEBUG("Reprojection impossible: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle());
+                BOOST_LOG_TRIVIAL(debug) << "Reprojection impossible: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle();
 
             }
 
@@ -812,8 +810,8 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
                 if (image) {
                     images.push_back(image);
                 } else {
-                    LOGGER_ERROR("Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile");
-                    return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+                    BOOST_LOG_TRIVIAL(error) << "Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile";
+                    return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE, "Impossible de repondre a la requete","wmts" ) );
                 }
 
             }
@@ -828,13 +826,13 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
         mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
 
         if (mergeImage == NULL) {
-            LOGGER_ERROR("Impossible de générer la tuile car l'opération de merge n'a pas fonctionné");
-            return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+            BOOST_LOG_TRIVIAL(error) << "Impossible de générer la tuile car l'opération de merge n'a pas fonctionné";
+            return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE, "Impossible de repondre a la requete","wmts" ) );
         }
 
     } else {
-        LOGGER_ERROR("Aucune image n'a été récupérée");
-        return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+        BOOST_LOG_TRIVIAL(error) << "Aucune image n'a été récupérée";
+        return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND,  "No data found", "wmts" ) );
     }
 
 
@@ -844,8 +842,8 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     DataSource *tile;
 
     if (tileSource == NULL) {
-        LOGGER_ERROR("Impossible de générer la tuile car l'opération de formattage n'a pas fonctionné");
-        return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+        BOOST_LOG_TRIVIAL(error) << "Impossible de générer la tuile car l'opération de formattage n'a pas fonctionné";
+        return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE, "Impossible de repondre a la requete","wmts" ) );
     } else {
         tile = new BufferedDataSource(*tileSource);
         delete tileSource;
@@ -867,7 +865,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
     struct stat bufferT;
     struct stat bufferE;
 
-    LOGGER_INFO("GetTileOnFly");
+    BOOST_LOG_TRIVIAL(info) << "GetTileOnFly";
 
     //---- on verifie certains paramètres pour ne pas effectuer des calculs inutiles
     Level* lev = pyr->getLevel(tileMatrix);
@@ -944,10 +942,6 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             exit(0);
                         }
 
-                        //on cree un logger et supprime l'ancien pour ne pas mélanger les sorties
-                        // il sera écrit dans SpathErr et supprimé si la dalle a été généré correctement
-                        parallelProcess->initializeLogger(SpathErr);
-
                         //on cree la dalle
                         int state = createSlabOnFly(L, tileMatrix, tileCol, tileRow, style, format, Spath);
                         if (!state) {
@@ -987,16 +981,15 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             //std::cerr << "errno: " << errno << " " << strerror(errno) << std::endl;
                         }
 
-                        parallelProcess->destroyLogger();
                         //on arrete le processus
                         exit(0);
 
                     } else {
                         //PROCESSUS PERE
                         //on va répondre a la requête
-                        LOGGER_DEBUG("Processus parallele lance ");
-                        LOGGER_DEBUG("Création de la dalle "+Spath);
-                        LOGGER_DEBUG("Log dans le fichier "+SpathErr);
+                        BOOST_LOG_TRIVIAL(debug) << "Processus parallele lance ";
+                        BOOST_LOG_TRIVIAL(debug) << "Création de la dalle "+Spath;
+                        BOOST_LOG_TRIVIAL(debug) << "Log dans le fichier "+SpathErr;
 
                         tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                     }
@@ -1005,7 +998,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
 
 
                 } else {
-                    LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
+                    BOOST_LOG_TRIVIAL(warning) << "Impossible de créer un processus parallele donc pas de génération de dalle";
                     tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                 }
             }
@@ -1034,9 +1027,9 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     int bSize = 0;
 
     //On cree la dalle sous forme d'image
-    LOGGER_INFO("Create Slab on Fly");
+    BOOST_LOG_TRIVIAL(info) << "Create Slab on Fly";
     //Calcul des paramètres nécessaires
-    LOGGER_DEBUG("Compute parameters");
+    BOOST_LOG_TRIVIAL(debug) << "Compute parameters";
     //la correspondance est assurée par les vérifications qui ont eu lieu dans getTile()
     std::string level = tileMatrix;
     Pyramid * pyr = L->getDataPyramid();
@@ -1046,7 +1039,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
 
     //---- on va créer la bbox associée à la dalle
-    LOGGER_DEBUG("Compute BBOX");
+    BOOST_LOG_TRIVIAL(debug) << "Compute BBOX";
     Level* lev = pyr->getLevel(tileMatrix);
 
     BoundingBox<double> bbox = lev->tileIndicesToSlabBbox(tileCol,tileRow) ;
@@ -1054,7 +1047,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     //---- bbox creee
 
     //width and height
-    LOGGER_DEBUG("Compute width and height");
+    BOOST_LOG_TRIVIAL(debug) << "Compute width and height";
     width = lev->getSlabWidth();
     height = lev->getSlabHeight();
     tileW = lev->getTm()->getTileW();
@@ -1063,7 +1056,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
     //--------------------------------------------------------------------------------------------------------
     //CREATION DE L'IMAGE
-    LOGGER_DEBUG("Create Image");
+    BOOST_LOG_TRIVIAL(debug) << "Create Image";
 
     bSources = lev->getSources();
     bSize = bSources.size();
@@ -1077,27 +1070,27 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             //----on recupère la Pyramide Source
             Pyramid *bPyr = reinterpret_cast<Pyramid*>(bSources.at(i));
 
-            LOGGER_DEBUG("basedPyramid");
+            BOOST_LOG_TRIVIAL(debug) << "basedPyramid";
             pyrType = bPyr->getFormat();
             bStyle = bPyr->getStyle();
             bLevel = bPyr->getLevels().begin()->second->getId();
 
-            LOGGER_DEBUG("Create reprojected image");
+            BOOST_LOG_TRIVIAL(debug) << "Create reprojected image";
             curImage = bPyr->createBasedSlab(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
-            LOGGER_DEBUG("Created");
+            BOOST_LOG_TRIVIAL(debug) << "Created";
             if (curImage != NULL) {
                 //On applique un style à l'image
                 image = styleImage(curImage, pyrType, bStyle, format, bSize, bPyr);
                 if (!image) {
-                     LOGGER_ERROR("Impossible d'appliquer le style");
+                     BOOST_LOG_TRIVIAL(error) << "Impossible d'appliquer le style";
                      state = 1;
                      return state;
                 } else {
-                    LOGGER_DEBUG("Apply style");
+                    BOOST_LOG_TRIVIAL(debug) << "Apply style";
                     images.push_back ( image );
                 }
             } else {
-                LOGGER_ERROR("Impossible de générer la dalle car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
+                BOOST_LOG_TRIVIAL(error) << "Impossible de générer la dalle car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile";
                 state = 1;
                 delete bStyle;
                 return state;
@@ -1118,7 +1111,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
                 if (image) {
                     images.push_back(image);
                 } else {
-                    LOGGER_ERROR("Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile");
+                    BOOST_LOG_TRIVIAL(error) << "Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile";
                     state = 1;
                     return state;
                 }
@@ -1134,9 +1127,9 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     if (images.size() != 0) {
 
         mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
-        LOGGER_DEBUG("Merged differents basedImages");
+        BOOST_LOG_TRIVIAL(debug) << "Merged differents basedImages";
         if (mergeImage == NULL) {
-            LOGGER_ERROR("Impossible de générer la dalle car l'opération de merge n'a pas fonctionné");
+            BOOST_LOG_TRIVIAL(error) << "Impossible de générer la dalle car l'opération de merge n'a pas fonctionné";
             state = 1;
             return state;
         }
@@ -1148,7 +1141,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
         }
 
     } else {
-        LOGGER_ERROR("Impossible de générer la dalle car aucune image n'a été récupérée");
+        BOOST_LOG_TRIVIAL(error) << "Impossible de générer la dalle car aucune image n'a été récupérée";
         state = 1;
         return state;
     }
@@ -1164,7 +1157,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     Rok4ImageFactory R4IF;
     //à cause d'un problème de typage...
     char * pathToWrite = (char *)path.c_str();
-    LOGGER_DEBUG("Create Rok4Image");
+    BOOST_LOG_TRIVIAL(debug) << "Create Rok4Image";
 
     FileContext* fc = new FileContext("");
     fc->connection();
@@ -1176,22 +1169,22 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
         pyr->getPhotometric(),pyr->getSampleCompression(),tileW, tileH, fc
     );
 
-    LOGGER_DEBUG("Created");
+    BOOST_LOG_TRIVIAL(debug) << "Created";
 
     if (finalImage != NULL) {
-        //LOGGER_DEBUG ( "Write" );
-        LOGGER_DEBUG("Write Slab");
+        //BOOST_LOG_TRIVIAL(debug) <<  "Write" ;
+        BOOST_LOG_TRIVIAL(debug) << "Write Slab";
         if (finalImage->writeImage(lastImage) < 0) {
-            LOGGER_ERROR("Impossible de générer la dalle car son écriture en mémoire a échoué");
+            BOOST_LOG_TRIVIAL(error) << "Impossible de générer la dalle car son écriture en mémoire a échoué";
             state = 1;
             delete lastImage;
             delete finalImage;
             return state;
         } else {
-            LOGGER_DEBUG("Written");
+            BOOST_LOG_TRIVIAL(debug) << "Written";
         }
     } else {
-        LOGGER_ERROR("Impossible de générer la dalle car la création d'une Rok4Image ne marche pas");
+        BOOST_LOG_TRIVIAL(error) << "Impossible de générer la dalle car la création d'une Rok4Image ne marche pas";
         state = 1;
         delete lastImage;
         delete finalImage;
@@ -1224,7 +1217,7 @@ DataStream* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
 
     DataStream* errorResp = getFeatureInfoParamWMS (request, layers, query_layers, bbox, width, height, crs, format, styles, info_format, X, Y, feature_count, format_option);
     if ( errorResp ) {
-        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
+        BOOST_LOG_TRIVIAL(error) <<   "Probleme dans les parametres de la requete getFeatureInfo" ;
         return errorResp;
     }
     return CommonGetFeatureInfo( "wms", query_layers.at(0), bbox, width, height, crs, info_format, X, Y, format, feature_count );
@@ -1240,14 +1233,14 @@ DataStream* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
     int X, Y;
     std::string info_format;
 
-    LOGGER_DEBUG("WMTSGetFeatureInfo");
+    BOOST_LOG_TRIVIAL(debug) << "WMTSGetFeatureInfo";
 
-    LOGGER_DEBUG("Verification des parametres de la requete");
+    BOOST_LOG_TRIVIAL(debug) << "Verification des parametres de la requete";
 
     DataStream* errorResp = getFeatureInfoParamWMTS (request, layer, tileMatrix, tileCol, tileRow, format, style, info_format, X, Y);
     
     if ( errorResp ) {
-        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
+        BOOST_LOG_TRIVIAL(error) <<   "Probleme dans les parametres de la requete getFeatureInfo" ;
         return errorResp;
     }
     Pyramid* pyr = layer->getDataPyramid();
@@ -1265,7 +1258,7 @@ DataStream* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
 DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer, BoundingBox<double> bbox, int width, int height, CRS crs, std::string info_format , int X, int Y, std::string format, int feature_count){
     std::string getFeatureInfoType = layer->getGFIType();
     if ( getFeatureInfoType.compare( "PYRAMID" ) == 0 ) {
-        LOGGER_DEBUG("GFI sur pyramide");
+        BOOST_LOG_TRIVIAL(debug) << "GFI sur pyramide";
         
         BoundingBox<double> pxBbox ( 0.0, 0.0, 0.0, 0.0 );
         pxBbox.xmin = (bbox.xmax-bbox.xmin)/double (width)*double (X) + bbox.xmin;
@@ -1279,13 +1272,13 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
         if ( image == 0 ) {
            switch ( error ) {
              case 1: {
-               return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox invalide" ), service ) );
+               return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "bbox invalide", service ) );
              }
              case 2: {
-               return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox trop grande" ), service ) );
+               return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "bbox trop grande", service ) );
              }
              default : {
-               return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ), service ) );
+               return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE, "Impossible de repondre a la requete", service ) );
              }
            }
         }
@@ -1324,18 +1317,18 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
                 break;
             }
             default:
-              return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Erreur interne."), service ) );
+              return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE, "Erreur interne.", service ) );
         }
         GetFeatureInfoEncoder gfiEncoder(strData, info_format);
         DataStream* responseDS = gfiEncoder.getDataStream();
         if (responseDS == NULL){
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Info_format non ") +info_format+ _( " supporté par la couche ") + layer->getId() , service ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Info_format non " +info_format+  " supporté par la couche " + layer->getId() , service ) );
         }
         delete image;
         return responseDS;
         
     } else if ( getFeatureInfoType.compare( "EXTERNALWMS" ) == 0 ) {
-        LOGGER_DEBUG("GFI sur WMS externe");
+        BOOST_LOG_TRIVIAL(debug) << "GFI sur WMS externe";
         WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),1,1,10);
         std::stringstream vectorRequest;
         std::string crsstring = crs.getRequestCode();
@@ -1382,21 +1375,21 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
             vectorRequest << "&BBOX=" << xmin << "," << ymin << "," << xmax << "," << ymax;
         }
 
-        LOGGER_DEBUG("REQUETE = " << vectorRequest.str());
+        BOOST_LOG_TRIVIAL(debug) << "REQUETE = " << vectorRequest.str();
         RawDataStream* response = myWMSV->performRequestStream (vectorRequest.str());
         if(response == NULL){
             delete myWMSV;
-            return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Internal server error" ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE, "Internal server error","wms" ) );
         }
 
         delete myWMSV;
         return response;
     } else if ( getFeatureInfoType.compare( "SQL" ) == 0 ) {
-        LOGGER_DEBUG("GFI sur SQL");
+        BOOST_LOG_TRIVIAL(debug) << "GFI sur SQL";
         // Non géré pour le moment. (nouvelle lib a integrer)
-        return new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GFI depuis un SQL non géré." ), service ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, "GFI depuis un SQL non géré.", service ) );
     } else {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "ERRORRRRRR !" ), service ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "ERRORRRRRR !", service ) );
     }
 }
 
@@ -1409,11 +1402,11 @@ void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
     } else if ( request->request == RequestType::GETFEATUREINFO) {
         S.sendresponse ( WMTSGetFeatureInfo ( request ), &fcgxRequest );
     } else if ( request->request == RequestType::GETVERSION ) {
-        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->getParam("request")+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ),&fcgxRequest );
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->getParam("request")+ " n'est pas prise en charge par ce serveur." + ROK4_INFO,"wmts" ) ),&fcgxRequest );
     } else if ( request->request == RequestType::REQUEST_MISSING ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre REQUEST n'est pas renseigne." ) ,"wmts" ) ),&fcgxRequest );
     } else {
-        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "L'operation " ) +request->getParam("request")+_ ( " n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
+        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, "L'operation " +request->getParam("request")+ " n'est pas prise en charge par ce serveur.","wmts" ) ),&fcgxRequest );
     }
 }
 
@@ -1430,6 +1423,8 @@ void Rok4Server::processTMS ( Request* request, FCGX_Request&  fcgxRequest ) {
         S.sendresponse ( TMSGetLayer ( request ), &fcgxRequest );
     } else if ( request->request == RequestType::GETLAYERMETADATA ) {
         S.sendresponse ( TMSGetLayerMetadata ( request ), &fcgxRequest );
+    } else if ( request->request == RequestType::GETLAYERGDAL ) {
+        S.sendresponse ( TMSGetLayerGDAL ( request ), &fcgxRequest );
     } else {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, std::string ( "L'operation n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"tms" ) ),&fcgxRequest );
     }
@@ -1444,11 +1439,11 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
     } else if ( request->request == RequestType::GETFEATUREINFO) {
         S.sendresponse ( WMSGetFeatureInfo ( request ), &fcgxRequest );
     } else if ( request->request == RequestType::GETVERSION ) {
-        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->getParam("request")+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wms" ) ),&fcgxRequest );
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->getParam("request")+ " n'est pas prise en charge par ce serveur." + ROK4_INFO,"wms" ) ),&fcgxRequest );
     } else if ( request->request == RequestType::REQUEST_MISSING ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre REQUEST n'est pas renseigne." ) ,"wms" ) ),&fcgxRequest );
     } else {
-        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->getParam("request")+_ ( " n'est pas prise en charge par ce serveur." ),"wms" ) ),&fcgxRequest );
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->getParam("request")+ " n'est pas prise en charge par ce serveur.","wms" ) ),&fcgxRequest );
     }
 }
 
@@ -1464,10 +1459,10 @@ void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest 
         processTMS ( request, fcgxRequest );
     }
     else if ( serverConf->supportTMS && request->service == ServiceType::SERVICE_MISSING) {
-        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Le service est manquant" ),"wmts" ) ),&fcgxRequest );
+        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Le service est manquant","wmts" ) ),&fcgxRequest );
     }
     else {
-        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service est inconnu pour ce serveur." ),"wmts" ) ),&fcgxRequest );
+        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Le service est inconnu pour ce serveur.","wmts" ) ),&fcgxRequest );
     }
 }
 

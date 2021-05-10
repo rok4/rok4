@@ -15,7 +15,6 @@ RUN yum -y --enablerepo=extras install \
         fcgi-devel \
         tinyxml-devel \
         openjpeg2-devel \
-        gettext \
         zlib-devel \
         libtiff-devel \
         libpng-devel \
@@ -23,6 +22,7 @@ RUN yum -y --enablerepo=extras install \
         openssl-devel \
         turbojpeg-devel \
         libjpeg-turbo-devel \
+        boost-devel \
         librados2-devel
 
 ENV PATH=/opt/rh/devtoolset-7/root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -44,7 +44,7 @@ WORKDIR /build
 
 RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_BE4=0 /sources/ && make && make install && rm -r /sources /build
 
-RUN yum -y remove make cmake gcc gcc-c++ devtoolset-7-gcc-c++ fcgi-devel tinyxml-devel openjpeg2-devel zlib-devel libtiff-devel libpng-devel libcurl-devel openssl-devel turbojpeg-devel libjpeg-turbo-devel librados2-devel
+RUN yum -y remove make cmake gcc gcc-c++ devtoolset-7-gcc-c++ boost-devel fcgi-devel tinyxml-devel openjpeg2-devel zlib-devel libtiff-devel libpng-devel libcurl-devel openssl-devel turbojpeg-devel libjpeg-turbo-devel librados2-devel
 
 FROM builder
 

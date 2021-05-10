@@ -54,7 +54,7 @@
 #include <ctype.h>
 
 #include "LibopenjpegImage.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -90,17 +90,17 @@ static Photometric::ePhotometric toROK4Photometric ( OPJ_COLOR_SPACE ph, int cha
 
 static void error_callback ( const char *msg, void *client_data ) {
     ( void ) client_data;
-    LOGGER_ERROR ( msg );
+    BOOST_LOG_TRIVIAL(error) <<  msg ;
 }
 
 static void warning_callback ( const char *msg, void *client_data ) {
     ( void ) client_data;
-    LOGGER_WARN ( msg );
+    BOOST_LOG_TRIVIAL(warning) <<  msg ;
 }
 
 static void info_callback ( const char *msg, void *client_data ) {
     ( void ) client_data;
-    LOGGER_DEBUG ( msg );
+    BOOST_LOG_TRIVIAL(debug) <<  msg ;
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -126,7 +126,7 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
     file = std::fopen ( filename , "rb" );
 
     if ( !file ) {
-        LOGGER_ERROR ( "Unable to open the JPEG2000 file (to read) " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to open the JPEG2000 file (to read) " << filename ;
         return NULL;
     }
 
@@ -136,7 +136,7 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
     if ( std::fread ( magic_code, 1, 12, file ) != 12 ) {
         free ( magic_code );
         std::fclose ( file );
-        LOGGER_ERROR ( "Unable to read the magic code for the JPEG2000 file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to read the magic code for the JPEG2000 file " << filename ;
         return NULL;
     }
 
@@ -145,12 +145,12 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
     // Format MAGIC Code
     if ( memcmp ( magic_code, JP2_RFC3745_MAGIC, 12 ) == 0 || memcmp ( magic_code, JP2_MAGIC, 4 ) == 0 ) {
         l_codec = opj_create_decompress ( OPJ_CODEC_JP2 );
-        LOGGER_DEBUG ( "Ok, use format JP2 !" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Ok, use format JP2 !" ;
     } else if ( memcmp ( magic_code, J2K_CODESTREAM_MAGIC, 4 ) == 0 ) {
         l_codec = opj_create_decompress ( OPJ_CODEC_J2K );
-        LOGGER_DEBUG ( "Ok, use format J2K !" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Ok, use format J2K !" ;
     } else {
-        LOGGER_ERROR ( "Unhandled format for the JPEG2000 file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unhandled format for the JPEG2000 file " << filename ;
         free ( magic_code );
         return NULL;
     }
@@ -165,7 +165,7 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
 
     /* Setup the decoder decoding parameters using user parameters */
     if ( !opj_setup_decoder ( l_codec, &parameters ) ) {
-        LOGGER_ERROR ( "Unable to setup the decoder for the JPEG2000 file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to setup the decoder for the JPEG2000 file " << filename ;
         opj_destroy_codec ( l_codec );
         return NULL;
     }
@@ -173,13 +173,13 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
     l_stream = opj_stream_create_default_file_stream ( filename,1 );
     if ( !l_stream ) {
         std::fclose ( file );
-        LOGGER_ERROR ( "Unable to create the stream (to read) for the JPEG2000 file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to create the stream (to read) for the JPEG2000 file " << filename ;
         return NULL;
     }
 
     /* Read the main header of the codestream and if necessary the JP2 boxes*/
     if ( ! opj_read_header ( l_stream, l_codec, &image ) ) {
-        LOGGER_ERROR ( "Unable to read the header for the JPEG2000 file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to read the header for the JPEG2000 file " << filename ;
         opj_stream_destroy ( l_stream );
         opj_destroy_codec ( l_codec );
         opj_image_destroy ( image );
@@ -196,14 +196,14 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
     SampleFormat::eSampleFormat sf = SampleFormat::UINT;
     Photometric::ePhotometric ph = toROK4Photometric ( image->color_space , channels);
     if ( ph == Photometric::UNKNOWN ) {
-        LOGGER_ERROR ( "Unhandled color space (" << image->color_space << ") in the JPEG2000 image " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unhandled color space (" << image->color_space << ") in the JPEG2000 image " << filename ;
         return NULL;
     }
 
     // On vérifie que toutes les composantes ont bien les mêmes carctéristiques
     for ( int i = 1; i < channels; i++ ) {
         if ( bitspersample != image->comps[i].prec || width != image->comps[i].w || height != image->comps[i].h ) {
-            LOGGER_ERROR ( "All components have to be the same in the JPEG image " << filename );
+            BOOST_LOG_TRIVIAL(error) <<  "All components have to be the same in the JPEG image " << filename ;
             return NULL;
         }
     }
@@ -211,14 +211,14 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
     /********************** CONTROLES **************************/
 
     if ( ! LibopenjpegImage::canRead ( bitspersample, sf ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
-        LOGGER_ERROR ( "\t for the image to read : " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" ;
+        BOOST_LOG_TRIVIAL(error) <<  "\t for the image to read : " << filename ;
         return NULL;
     }
     
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" ;
             return NULL;
         }
     } else {
@@ -231,7 +231,7 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
 
     /* Get the decoded image */
     if ( ! ( opj_decode ( l_codec, l_stream, image ) && opj_end_decompress ( l_codec, l_stream ) ) ) {
-        LOGGER_ERROR ( "Unable to decode JPEG2000 file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to decode JPEG2000 file " << filename ;
         opj_destroy_codec ( l_codec );
         opj_stream_destroy ( l_stream );
         opj_image_destroy ( image );

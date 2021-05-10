@@ -49,7 +49,7 @@ using namespace std;
 #define _TIFFNODATAMANAGER_
 
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Format.h"
 #include "FileImage.h"
 #include <stdint.h>
@@ -324,7 +324,7 @@ TiffNodataManager<T>::TiffNodataManager ( uint16 channels, int* tv, bool touchEd
 template<typename T>
 bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, char* outputMask ) {
     if ( ! newNodataValue && ! removeTargetValue && ! outputMask ) {
-        LOGGER_INFO ( "Have nothing to do !" );
+        BOOST_LOG_TRIVIAL(info) <<  "Have nothing to do !" ;
         return true;
     }
 
@@ -332,7 +332,7 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
     FileImage* sourceImage = FIF.createImageToRead(inputImage);
 
     if ( sourceImage == NULL )  {
-        LOGGER_ERROR ( "Cannot create the input image "<< inputImage );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot create the input image "<< inputImage ;
         return false;
     }
     
@@ -347,8 +347,8 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
     samplesperpixel = sourceImage->getChannels();
     
     if ( samplesperpixel > maxChannels )  {
-        LOGGER_ERROR ( "The nodata manager is not adapted (samplesperpixel have to be " << maxChannels <<
-                       " or less) for the image " << inputImage << " (" << samplesperpixel << ")" );
+        BOOST_LOG_TRIVIAL(error) << "The nodata manager is not adapted (samplesperpixel have to be " << maxChannels <<
+                       " or less) for the image " << inputImage << " (" << samplesperpixel << ")";
         return false;
     }
 
@@ -356,18 +356,18 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
 
     T *IM = (T*) malloc (width * height * samplesperpixel * sizeof(T));
     if ( IM == NULL ) {
-        LOGGER_ERROR ( "Cannot allocate a buffer of size " << width * height * samplesperpixel * sizeof(T) << " bytes" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot allocate a buffer of size " << width * height * samplesperpixel * sizeof(T) << " bytes" ;
         return false;
     }
 
-    LOGGER_DEBUG("We load input image into memory : " << width * height * samplesperpixel * sizeof(T) / 1024 << " kilobytes");
+    BOOST_LOG_TRIVIAL(debug) << "We load input image into memory : " << width * height * samplesperpixel * sizeof(T) / 1024 << " kilobytes";
     for ( int h = 0; h < height; h++ ) {
         sourceImage->getline(IM + width*samplesperpixel*h, h);
     }
 
     delete sourceImage;
 
-    LOGGER_DEBUG("Premier pixel : " << (int)IM[0] << "," << (int)IM[1] << "," << (int)IM[2]);
+    BOOST_LOG_TRIVIAL(debug) << "Premier pixel : " << (int)IM[0] << "," << (int)IM[1] << "," << (int)IM[2];
 
     /************* Calcul du masque de données ***********/
 
@@ -378,12 +378,12 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
     /*************** Modification des pixels *************/
 
     if ( removeTargetValue ) {
-        LOGGER_DEBUG("The 'targetValue' data pixels are replaced by 'dataValue' pixels");
+        BOOST_LOG_TRIVIAL(debug) << "The 'targetValue' data pixels are replaced by 'dataValue' pixels";
         changeDataValue ( IM, MSK );
     }
 
     if ( newNodataValue ) {
-        LOGGER_DEBUG("Nodata pixels which touch edges are replaced by 'nodataValue' pixels");
+        BOOST_LOG_TRIVIAL(debug) << "Nodata pixels which touch edges are replaced by 'nodataValue' pixels";
         changeNodataValue ( IM, MSK );
     }
 
@@ -399,18 +399,18 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
         );
 
         if ( destImage == NULL )  {
-            LOGGER_ERROR ( "Cannot create the output image "<< outputImage );
+            BOOST_LOG_TRIVIAL(error) <<  "Cannot create the output image "<< outputImage ;
             return false;
         }
         
-        LOGGER_DEBUG("We write the output image " << outputImage);
+        BOOST_LOG_TRIVIAL(debug) << "We write the output image " << outputImage;
         destImage->writeImage(IM);
 
         delete destImage;
 
     } else {
         if ( memcmp ( inputImage, outputImage, sizeof ( outputImage ) ) )
-            LOGGER_INFO ( "The image have not be modified, the file '" << outputImage <<"' is not written" );
+            BOOST_LOG_TRIVIAL(info) <<  "The image have not be modified, the file '" << outputImage <<"' is not written" ;
     }
 
     /**************** Ecriture du masque ? ****************/
@@ -422,16 +422,16 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
             );
 
             if ( destMask == NULL )  {
-                LOGGER_ERROR ( "Cannot create the output mask "<< outputMask );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot create the output mask "<< outputMask ;
                 return false;
             }
 
-            LOGGER_DEBUG("We write the output mask " << outputMask);
+            BOOST_LOG_TRIVIAL(debug) << "We write the output mask " << outputMask;
             destMask->writeImage(MSK);
 
             delete destMask;
         } else {
-            LOGGER_INFO ( "The image contains only data, the mask '" << outputMask <<"' is not written" );
+            BOOST_LOG_TRIVIAL(info) <<  "The image contains only data, the mask '" << outputMask <<"' is not written" ;
         }
     }
 
@@ -458,13 +458,13 @@ inline bool TiffNodataManager<T>::isTargetValue ( T* pix ) {
 template<typename T>
 bool TiffNodataManager<T>::identifyNodataPixels ( T* IM, uint8_t* MSK ) {
 
-    LOGGER_DEBUG ( "Identify nodata pixels..." );
+    BOOST_LOG_TRIVIAL(debug) <<  "Identify nodata pixels..." ;
     memset ( MSK, 255, width * height );
 
     bool containNodata = false;
 
     if ( touchEdges ) {
-        LOGGER_DEBUG ( "\t...which touch edges" );
+        BOOST_LOG_TRIVIAL(debug) <<  "\t...which touch edges" ;
         // On utilise la couleur targetValue et on part des bords
         queue<unsigned long long> Q;
 
@@ -537,7 +537,7 @@ bool TiffNodataManager<T>::identifyNodataPixels ( T* IM, uint8_t* MSK ) {
         }
 
     } else {
-        LOGGER_DEBUG ( "\t..., all pixels in 'target color'" );
+        BOOST_LOG_TRIVIAL(debug) <<  "\t..., all pixels in 'target color'" ;
         // Tous les pixels de la couleur targetValue sont à considérer comme du nodata
 
         for ( unsigned long long i = 0; i < width * height; i++ ) {

@@ -47,7 +47,7 @@
 #define CURLPOOL_H
 
 #include <stdint.h>// pour uint8_t
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include <map>
 #include <string.h>
 #include <sstream>
@@ -115,7 +115,7 @@ public:
      * \~english \brief Print the number of curl objects in the book
      */
     static void printNumCurls () {
-        LOGGER_INFO("Nombre de contextes curl : " << pool.size());
+        BOOST_LOG_TRIVIAL(info) << "Nombre de contextes curl : " << pool.size();
     }
 
     /**

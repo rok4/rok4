@@ -5,8 +5,6 @@ SET(CPACK_PACKAGE_VERSION_MAJOR "0")
 SET(CPACK_PACKAGE_VERSION_MINOR "0")
 SET(CPACK_PACKAGE_VERSION_PATCH "1")
 
-cmake_minimum_required(VERSION 2.6)
-
 ########################################
 #Attention aux chemins
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules ${CMAKE_MODULE_PATH})
@@ -51,10 +49,10 @@ add_library(${PROJECT_NAME} STATIC ${${PROJECT_NAME}_SRCS})
 
 include(ROK4Dependencies)
 
-#set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
+#set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-#set(DEP_LIBRARY fcgi tinyxml logger image proj zlib tiff pkb)
+#set(DEP_LIBRARY fcgi tinyxml image proj zlib tiff pkb)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 

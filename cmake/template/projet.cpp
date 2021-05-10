@@ -41,8 +41,6 @@
 
 int main ( int argc, char *argv[] ) {
     setlocale ( LC_ALL,"" );
-    textdomain ( "Template" );
-    bindtextdomain ( "Template", "../share/locale" );
     LibProjet mlibprojet;
     mlibprojet.sayHello();
     return 0;

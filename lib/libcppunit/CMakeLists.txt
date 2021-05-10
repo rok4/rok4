@@ -5,8 +5,6 @@ SET(CPACK_PACKAGE_VERSION_MAJOR "1")
 SET(CPACK_PACKAGE_VERSION_MINOR "12")
 SET(CPACK_PACKAGE_VERSION_PATCH "1")
 
-cmake_minimum_required(VERSION 2.8.4)
-
 ########################################
 #Attention aux chemins
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules ${CMAKE_MODULE_PATH})
@@ -67,10 +65,10 @@ add_dependencies(cppunit cppunit-build)
 #Définition des dépendances.
 #include(ROK4Dependencies)
 
-#set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
+#set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-#set(DEP_LIBRARY fcgi tinyxml logger image proj zlib tiff)
+#set(DEP_LIBRARY fcgi tinyxml image proj zlib tiff)
 
 #include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 

@@ -70,6 +70,7 @@ namespace RequestType {
         GETCAPABILITIES,
         GETLAYER,
         GETLAYERMETADATA,
+        GETLAYERGDAL,
         GETMAP,
         GETTILE,
         GETFEATUREINFO,
@@ -246,11 +247,11 @@ public:
     std::map<std::string, std::string> params;
 
     void print() {
-        LOGGER_INFO("hostName = " << hostName);
-        LOGGER_INFO("path = " << path);
-        LOGGER_INFO("scheme = " << scheme);
-        LOGGER_INFO("service = " << ServiceType::toString(service));
-        LOGGER_INFO("request = " << RequestType::toString(request));
+        BOOST_LOG_TRIVIAL(info) << "hostName = " << hostName;
+        BOOST_LOG_TRIVIAL(info) << "path = " << path;
+        BOOST_LOG_TRIVIAL(info) << "scheme = " << scheme;
+        BOOST_LOG_TRIVIAL(info) << "service = " << ServiceType::toString(service);
+        BOOST_LOG_TRIVIAL(info) << "request = " << RequestType::toString(request);
     }
     /**
      * \~french

@@ -2,19 +2,6 @@
 SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
 #Défini le nom du projet 
 project(checkWork)
-#définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-#Lecture de la version dans le fichier README 
-if(NOT DEFINED ROK4_VERSION)
-        FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README tmp REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?$")
-        STRING(SUBSTRING ${tmp} 15 -1 subtmp)
-        STRING(REPLACE "." ";" ROK4_VERSION ${subtmp})
-endif(NOT DEFINED ROK4_VERSION)
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
-
-
-cmake_minimum_required(VERSION 2.6)
 
 ########################################
 #Attention aux chemins
@@ -59,18 +46,10 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${PROJ_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
-
-if(BUILD_OBJECT)
-    set (DEP_INCLUDE_DIR ${DEP_INCLUDE_DIR})
-endif(BUILD_OBJECT)
+set(DEP_INCLUDE_DIR ${PROJ_INCLUDE_DIR} ${BOOSTLOG_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY logger image proj curl)
-
-if(BUILD_OBJECT)
-    set (DEP_LIBRARY ${DEP_LIBRARY})
-endif(BUILD_OBJECT)
+set(DEP_LIBRARY image proj curl boostlog boostlogsetup boostthread boostfilesystem boostsystem)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 

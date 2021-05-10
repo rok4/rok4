@@ -44,7 +44,7 @@
 #include <cstring> // pour memcpy
 #include <algorithm>
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 /**
  * Interface abstraite permetant d'encapsuler une source de données.

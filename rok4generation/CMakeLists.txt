@@ -1,13 +1,6 @@
 #Défini le nom du projet
 project(Rok4Generation)
 
-#définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
-
-cmake_minimum_required(VERSION 2.8.4)
-
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules ${CMAKE_MODULE_PATH})
 
 if(NOT DEFINED DEP_PATH)
