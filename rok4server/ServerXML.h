@@ -52,11 +52,7 @@ class ServerXML;
 #include "config.h"
 #include "intl.h"
 #include "Rok4Server.h"
-
-#if BUILD_OBJECT
 #include "ContextBook.h"
-#endif
-
 
 class ServerXML : public DocumentXML
 {
@@ -98,13 +94,8 @@ class ServerXML : public DocumentXML
         int getNbLayers() ;
         Layer* getLayer(std::string id) ;
 
-#if BUILD_OBJECT
-        //CEOBJECT
-        //ContextBook* getCephContextBook();
-        //ContextBook* getS3ContextBook();
-        //ContextBook* getSwiftContextBook();
         ContextBook* getContextBook();
-
+#if BUILD_OBJECT
         int getReconnectionFrequency() ;
 #endif
         

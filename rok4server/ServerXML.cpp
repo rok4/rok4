@@ -459,12 +459,8 @@ void ServerXML::cleanLayers(std::vector<std::string> ids) {
     }
 }
 
-#if BUILD_OBJECT
-// ContextBook* ServerXML::getCephContextBook(){return cephBook;}
-// ContextBook* ServerXML::getSwiftContextBook(){return swiftBook;}
-// ContextBook* ServerXML::getS3ContextBook(){return s3Book;}
 ContextBook* ServerXML::getContextBook(){return objectBook;}
-
+#if BUILD_OBJECT
 int ServerXML::getReconnectionFrequency() {return reconnectionFrequency;}
 #endif
 
