@@ -68,6 +68,7 @@ Context * ContextBook::addContext(ContextType::eContextType type,std::string tra
         //
         //on créé le context selon le type de stockage
         switch(type){
+#if BUILD_OBJECT
             case ContextType::SWIFTCONTEXT:
                 ctx = new SwiftContext(tray);
                 break;
@@ -77,6 +78,7 @@ Context * ContextBook::addContext(ContextType::eContextType type,std::string tra
             case ContextType::S3CONTEXT:
                 ctx = new S3Context(tray);
                 break;
+#endif
             case ContextType::FILECONTEXT:
                 ctx = new FileContext(tray);
                 break;
