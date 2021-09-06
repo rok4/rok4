@@ -47,6 +47,7 @@
 #include "tinyxml.h"
 #include <iostream>
 #include <algorithm>
+#include <regex>
 #include <iomanip>
 #include <vector>
 #include <map>
@@ -406,8 +407,6 @@ DataStream* Rok4Server::TMSGetServices ( Request* request ) {
     }
     res << "</Services>\n";
 
-
-
     return new MessageDataStream ( res.str(),"application/xml" );
 }
 
@@ -427,8 +426,9 @@ void Rok4Server::buildTMSCapabilities() {
         Layer* lay = itLay->second;
 
         if (lay->getTMSAuthorized()) {
+            std::string ln = std::regex_replace(lay->getTitle(), std::regex("\""), "&quot;");
             tmsCapaTemplate += "    <TileMap\n";
-            tmsCapaTemplate += "      title=\"" + lay->getTitle() + "\" \n";
+            tmsCapaTemplate += "      title=\"" + ln + "\" \n";
             tmsCapaTemplate += "      srs=\"" + lay->getDataPyramid()->getTms()->getCrs().getRequestCode() + "\" \n";
             tmsCapaTemplate += "      profile=\"none\" \n";
             tmsCapaTemplate += "      extension=\"" + Rok4Format::toExtension ( ( lay->getDataPyramid()->getFormat() ) ) + "\" \n";
