@@ -17,4 +17,5 @@ target
 .vagrant
 .vagrant.d
 ^install
+valgrind.log
 docs/naturaldocs/Data

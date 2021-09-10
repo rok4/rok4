@@ -11,7 +11,7 @@ Cet outil fusionne plusieurs images disposées en un dallage régulier en une se
 `composeNtiff -s <DIRECTORY> -g <VAL> <VAL> -c <VAL> <OUTPUT FILE> [-d]`
 
 * `-s` : dossier contenant toutes les images du quadrillage. Elles sont lues dans l'ordre alpha-numérique. Si il a plus d'images que nécessaires, les dernières ne sont pas utilisées
-* `-c <COMPRESSION>` : compression des données dans l'image TIFF en sortie : jpg, raw (défaut), zip, lzw, pkb
+* `-c <COMPRESSION>` : compression des données dans l'image TIFF en sortie : jpg, jpg90, raw (défaut), zip, lzw, pkb
 * `-g <INTEGER> <INTEGER>` : largeur et hauteur de la grille en nombre d'images
 * `-d` : activation des logs de niveau DEBUG
 

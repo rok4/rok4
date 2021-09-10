@@ -17,7 +17,7 @@ Les informations sur les canaux (nombre, taille en bits et format) peuvent :
 
 * `-g <FLOAT>` : valeur de gamma permettant d'augmenter les contrastes (si inférieur à 1) ou de les réduire (si supérieur à 1)
 * `-n <COLOR>` : couleur de nodata, valeurs décimales pour chaque canal, séparées par des virgules (exemple : 255,255,255 pour du blanc sans transparence)
-* `-c <COMPRESSION>` : compression des données dans l'image TIFF en sortie : jpg, raw (défaut), zip, lzw, pkb
+* `-c <COMPRESSION>` : compression des données dans l'image TIFF en sortie : jpg, jpg90, raw (défaut), zip, lzw, pkb
 * `-io <FILE>` : chemin de l'image de sortie
 * `-mo <FILE>` : chemin du masque de sortie associé (optionnel)
 * `-iX <FILE>` : chemin d'une image en entrée

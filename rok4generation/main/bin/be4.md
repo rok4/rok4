@@ -88,13 +88,13 @@ filepath_conf = /home/IGN/SOURCE/sources.txt
 
 Valeurs pour `compression` :
 
-* `raw`, `jpg`, `zip`, `lzw`, `pkb` : ces compressions officielles du format TIFF permettront une visualisation de la dalle dans un logiciel d'image externe
+* `raw`, `jpg`, `jpg90`, `zip`, `lzw`, `pkb` : ces compressions officielles du format TIFF permettront une visualisation de la dalle dans un logiciel d'image externe
 * `png` : ce format propre à ROK4 ne sera pas lisible en dehors du projet.
 
 Valeurs pour `compressionoption` :
 
 * `none` : ne change rien
-* `crop` : uniquement disponible pour la compression JPEG, crop permet de remplir de blanc les blocs (16x16 pixels) contenant un pixel blanc.
+* `crop` : uniquement disponible pour la compression JPEG ou JPEG90, crop permet de remplir de blanc les blocs (16x16 pixels) contenant un pixel blanc.
 
 Valeurs pour `color` : les valeur pour chaque canal sont séparées par des virgules.
 * pour des canaux entiers non signés sur 8 bits : une valeur entière de 0 à 255. Exemple : `255,255,255` pour une pyramide RGB
