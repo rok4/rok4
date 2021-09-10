@@ -40,7 +40,7 @@
 #include <cmath>
 
 /** Constructeur */
-JPEGEncoder::JPEGEncoder ( Image* image ) : image ( image ), status ( -1 ) {
+JPEGEncoder::JPEGEncoder ( Image* image, int quality ) : image ( image ), status ( -1 ) {
     cinfo.err = jpeg_std_error ( &jerr );
     jpeg_create_compress ( &cinfo );
     cinfo.dest = new jpeg_destination_mgr;
@@ -61,6 +61,7 @@ JPEGEncoder::JPEGEncoder ( Image* image ) : image ( image ), status ( -1 ) {
 
 
     jpeg_set_defaults ( &cinfo );
+    jpeg_set_quality ( &cinfo, quality, true );
 
     bufferLimit = std::max ( 1024, ( ( image->getWidth() * image->getChannels() ) / 2 ) );
 

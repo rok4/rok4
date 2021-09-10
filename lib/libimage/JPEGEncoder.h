@@ -66,7 +66,7 @@ private:
 
 public:
     /** D */
-    JPEGEncoder ( Image* image );
+    JPEGEncoder ( Image* image, int quality = 75 );
 
     /** D */
     ~JPEGEncoder();
