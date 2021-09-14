@@ -460,7 +460,7 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
 
     if ( format==Rok4Format::TIFF_RAW_INT8 || format==Rok4Format::TIFF_RAW_FLOAT32 )
         return encData;
-    else if ( format==Rok4Format::TIFF_JPG_INT8 )
+    else if ( format==Rok4Format::TIFF_JPG_INT8 || format==Rok4Format::TIFF_JPG90_INT8 )
         return new DataSourceDecoder<JpegDecoder> ( encData );
     else if ( format==Rok4Format::TIFF_PNG_INT8 )
         return new DataSourceDecoder<PngDecoder> ( encData );
