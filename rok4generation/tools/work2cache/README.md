@@ -15,7 +15,7 @@ La taille de tuile précisée doit être cohérente avec la taille totale de la 
 
 `work2cache -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE/OBJECT> [-pool <POOL NAME>|-bucket <BUCKET NAME>|-container <CONTAINER NAME>] [-a <VAL> -s <VAL> -b <VAL>] [-crop]`
 
-* `-c <COMPRESSION>` : compression des données dans l'image TIFF en sortie : jpg, raw (défaut), zip, lzw, pkb, png
+* `-c <COMPRESSION>` : compression des données dans l'image TIFF en sortie : jpg, jpg90, raw (défaut), zip, lzw, pkb, png
 * `-t <INTEGER> <INTEGER>` : taille pixel d'une tuile, enlargeur et hauteur. Doit être un diviseur de la largeur et de la hauteur de l'image en entrée
 * `-pool <POOL NAME>` : précise le nom du pool CEPH dans lequel écrire la dalle
 * `-bucket <BUCKET NAME>` : précise le nom du bucket S3 dans lequel écrire la dalle

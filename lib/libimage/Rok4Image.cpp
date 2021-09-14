@@ -196,6 +196,8 @@ static uint16_t fromROK4Compression ( Compression::eCompression comp ) {
         return COMPRESSION_ADOBE_DEFLATE;
     case Compression::JPEG :
         return COMPRESSION_JPEG;
+    case Compression::JPEG90 :
+        return COMPRESSION_JPEG;
     case Compression::PNG :
         return COMPRESSION_ADOBE_DEFLATE;
     case Compression::LZW :
@@ -380,7 +382,7 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
         return NULL;
     }
 
-    if (compression == Compression::JPEG) {
+    if (compression == Compression::JPEG || compression == Compression::JPEG90) {
         if (photometric == Photometric::GRAY) {
             BOOST_LOG_TRIVIAL(error) << "Gray JPEG is not handled";
             return NULL;
@@ -392,10 +394,10 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
         }
     }
     
-    if (compression == Compression::JPEG && photometric == Photometric::RGB)
+    if ((compression == Compression::JPEG || compression == Compression::JPEG90) && photometric == Photometric::RGB)
         photometric = Photometric::YCBCR;
 
-    if (compression != Compression::JPEG && photometric == Photometric::YCBCR)
+    if (compression != Compression::JPEG && compression != Compression::JPEG90 && photometric == Photometric::YCBCR)
         photometric = Photometric::RGB;
 
     if (compression == Compression::PNG) {
@@ -538,6 +540,9 @@ boolean Rok4Image::memorizeRawTiles ( int tilesLine )
             decDS = encDS;
         }
         else if ( compression == Compression::JPEG ) {
+            decDS = new DataSourceDecoder<JpegDecoder> ( encDS );
+        }
+        else if ( compression == Compression::JPEG90 ) {
             decDS = new DataSourceDecoder<JpegDecoder> ( encDS );
         }
         else if ( compression == Compression::LZW ) {
@@ -704,7 +709,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         return -1;
     }
 
-    if (compression != Compression::JPEG && crop) {
+    if (compression != Compression::JPEG && compression != Compression::JPEG90 && crop) {
         BOOST_LOG_TRIVIAL(warning) << "Crop option is reserved for JPEG compression";
         crop = false;
     }
@@ -1003,6 +1008,7 @@ bool Rok4Image::prepareBuffers()
         if ( compression == Compression::PNG) quality = 5;
         if ( compression == Compression::DEFLATE ) quality = 6;
         if ( compression == Compression::JPEG ) quality = 75;
+        if ( compression == Compression::JPEG90 ) quality = 90;
 
         // variables initalizations
 
@@ -1024,7 +1030,7 @@ bool Rok4Image::prepareBuffers()
             deflateInit ( &zstream, quality );
         }
 
-        if ( compression == Compression::JPEG ) {
+        if ( compression == Compression::JPEG || compression == Compression::JPEG90 ) {
             cinfo.err = jpeg_std_error ( &jerr );
             jpeg_create_compress ( &cinfo );
 
@@ -1096,6 +1102,9 @@ bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
         size = computeLzwTile ( Buffer, data );
         break;
     case Compression::JPEG:
+        size = computeJpegTile ( Buffer, data, crop );
+        break;
+    case Compression::JPEG90:
         size = computeJpegTile ( Buffer, data, crop );
         break;
     case Compression::PNG :

@@ -20,7 +20,7 @@ Cet outil génère une image à partir de plusieurs images de même dimension et
 ![alpha top](../../../docs/images/LIBIMAGE/merge_mask.png)
 * `-b <COLOR>` : couleur de fond, valeurs décimales pour chaque canal, séparées par des virgules (exemple : 255,255,255 pour du blanc sans transparence)
 * `-t <COLOR>` : couleur à considérer comme transparente, valeurs décimales pour chaque canal, séparées par des virgules
-* `-c <COMPRESSION>` : compression des données dans l'image TIFF en sortie : jpg, raw (défaut), zip, lzw, pkb
+* `-c <COMPRESSION>` : compression des données dans l'image TIFF en sortie : jpg, jpg90, raw (défaut), zip, lzw, pkb
 * `-s <INTEGER>` : nombre de canaux : 1, 2, 3, 4
 * `-p <PHOTOMETRIC>` : photométrie : gray, rgb
 * `-d` : activation des logs de niveau DEBUG

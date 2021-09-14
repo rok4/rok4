@@ -67,6 +67,7 @@ const char *compression_name[] = {
     "NONE",
     "DEFLATE",
     "JPEG",
+    "JPEG90",
     "PNG",
     "LZW",
     "PACKBITS",
@@ -169,6 +170,7 @@ const char *eformat_name[] = {
 
     "TIFF_RAW_INT8",
     "TIFF_JPG_INT8",
+    "TIFF_JPG90_INT8",
     "TIFF_PNG_INT8",
     "TIFF_LZW_INT8",
     "TIFF_ZIP_INT8",
@@ -185,6 +187,7 @@ const char *eformat_name[] = {
 const bool eformat_israster[] = {
     false,
 
+    true,
     true,
     true,
     true,
@@ -209,6 +212,7 @@ const int eformat_channelsize[] = {
     1,
     1,
     1,
+    1,
     
     4,
     4,
@@ -222,6 +226,7 @@ const char *eformat_mime[] = {
     "UNKNOWN",
 
     "image/tiff",
+    "image/jpeg",
     "image/jpeg",
     "image/png",
     "image/tiff",
@@ -240,6 +245,7 @@ const char *eformat_extension[] = {
     "UNKNOWN",
 
     "tif",
+    "jpeg",
     "jpeg",
     "png",
     "tif",
@@ -263,6 +269,7 @@ const char *eformat_encoding[] = {
     "",
     "",
     "",
+    "",
 
     "",
     "",
@@ -278,6 +285,7 @@ const Compression::eCompression eformat_compression[] = {
 
     Compression::NONE,
     Compression::JPEG,
+    Compression::JPEG90,
     Compression::PNG,
     Compression::LZW,
     Compression::DEFLATE,
@@ -301,6 +309,7 @@ const SampleFormat::eSampleFormat eformat_sampleformat[] = {
     SampleFormat::UINT,
     SampleFormat::UINT,
     SampleFormat::UINT,
+    SampleFormat::UINT,
 
     SampleFormat::FLOAT,
     SampleFormat::FLOAT,
@@ -314,6 +323,7 @@ const SampleFormat::eSampleFormat eformat_sampleformat[] = {
 const int eformat_bitspersample[] = {
     -1,
 
+    8,
     8,
     8,
     8,

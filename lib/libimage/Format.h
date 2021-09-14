@@ -126,17 +126,18 @@ enum eCompression {
     NONE = 1,
     DEFLATE = 2,
     JPEG = 3,
-    PNG = 4,
-    LZW = 5,
-    PACKBITS = 6,
-    JPEG2000 = 7
+    JPEG90 = 4,
+    PNG = 5,
+    LZW = 6,
+    PACKBITS = 7,
+    JPEG2000 = 8
 };
 
 /**
  * \~french \brief Nombre de compressions disponibles
  * \~english \brief Number of available compressions
  */
-const int compression_size = 7;
+const int compression_size = 8;
 
 /**
  * \~french \brief Conversion d'une chaîne de caractères vers une compression de l'énumération
@@ -275,17 +276,18 @@ enum eformat_data {
 
     TIFF_RAW_INT8 = 1,
     TIFF_JPG_INT8 = 2,
-    TIFF_PNG_INT8 = 3,
-    TIFF_LZW_INT8 = 4,
-    TIFF_ZIP_INT8 = 5,
-    TIFF_PKB_INT8 = 6,
+    TIFF_JPG90_INT8 = 3,
+    TIFF_PNG_INT8 = 4,
+    TIFF_LZW_INT8 = 5,
+    TIFF_ZIP_INT8 = 6,
+    TIFF_PKB_INT8 = 7,
 
-    TIFF_RAW_FLOAT32 = 7,
-    TIFF_LZW_FLOAT32 = 8,
-    TIFF_ZIP_FLOAT32 = 9,
-    TIFF_PKB_FLOAT32 = 10,
+    TIFF_RAW_FLOAT32 = 8,
+    TIFF_LZW_FLOAT32 = 9,
+    TIFF_ZIP_FLOAT32 = 10,
+    TIFF_PKB_FLOAT32 = 11,
 
-    TIFF_PBF_MVT = 11
+    TIFF_PBF_MVT = 12
 };
 
 /**

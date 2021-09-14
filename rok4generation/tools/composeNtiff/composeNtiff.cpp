@@ -95,7 +95,8 @@ std::string help = std::string("\ncomposeNtiff version ") + std::string(ROK4_VER
     "     -c output compression : default value : none\n"
     "             raw     no compression\n"
     "             none    no compression\n"
-    "             jpg     Jpeg encoding\n"
+    "             jpg     Jpeg encoding (quality 75)\n"
+    "             jpg90   Jpeg encoding (quality 90)\n"
     "             lzw     Lempel-Ziv & Welch encoding\n"
     "             pkb     PackBits encoding\n"
     "             zip     Deflate encoding\n"
@@ -161,6 +162,8 @@ int parseCommandLine ( int argc, char** argv ) {
                 }
                 if ( strncmp ( argv[i], "none",4 ) == 0 || strncmp ( argv[i], "raw",3 ) == 0 ) {
                     compression = Compression::NONE;
+                } else if ( strncmp ( argv[i], "jpg90",5 ) == 0 ) {
+                    compression = Compression::JPEG90;
                 } else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) {
                     compression = Compression::JPEG;
                 } else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) {

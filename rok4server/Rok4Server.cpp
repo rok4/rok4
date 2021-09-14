@@ -623,7 +623,12 @@ DataStream * Rok4Server::formatImage(Image *image, std::string format, Rok4Forma
             return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_RAW_INT8, isGeoTiff );
         }
     } else if ( format == "image/jpeg" ) {
-        return new JPEGEncoder ( image );
+        int quality = 75;
+        if (pyrType == Rok4Format::TIFF_JPG90_INT8 || getParam ( format_option,"quality" ).compare ( "90" ) == 0) {
+            quality = 90;
+        }
+
+        return new JPEGEncoder ( image, quality );
     } else if ( format == "image/x-bil;bits=32" ) {
         return new BilEncoder ( image );
     } else if ( format == "text/asc" ) {

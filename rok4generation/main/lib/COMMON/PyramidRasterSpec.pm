@@ -67,7 +67,7 @@ Using:
 Attributes:
     pixel - <COMMON::Pixel> - Contains pixel intrinsic components.
     compression - string - Data compression. Only PNG is a unofficial TIFF compression.
-    compressionoption - string - Precise additionnal actions, to do before compression. Just "crop" is available, with JPEG compression. It's allowed to empty blocs which contain white pixel, to keep pure white, even with JPEG compression.
+    compressionoption - string - Precise additionnal actions, to do before compression. Just "crop" is available, with JPEG or JPEG90 compression. It's allowed to empty blocs which contain white pixel, to keep pure white, even with JPEG compression.
     interpolation - string - Image could be resampling. Resampling use a kind of interpolation.
     gamma - float - Positive, used by merge4tiff to make dark (between 0 and 1) or light (greater than 1) RGB images. 1 is a neutral value.
     formatCode - string - Used in the pyramid's descriptor. Format is : TIFF_<COMPRESSION>_<SAMPLEFORMAT><BITSPERSAMPLE> (TIFF_RAW_INT8).
@@ -108,7 +108,7 @@ my @COMPRESSIONOPTIONS = ('none','crop');
 
 # Constant: COMPRESSIONS
 # Define allowed values for attributes compression
-my @COMPRESSIONS = ('raw','jpg','png','lzw','zip','pkb');
+my @COMPRESSIONS = ('raw','jpg','jpg90','png','lzw','zip','pkb');
 
 # Constant: INTERPOLATIONS
 # Define allowed values for attributes interpolation
@@ -136,6 +136,7 @@ my %SAMPLEFORMAT2CODE = (
 my %CODES = (
     TIFF_RAW_INT8 => ["raw", "uint", 8],
     TIFF_JPG_INT8 => ["jpg", "uint", 8],
+    TIFF_JPG90_INT8 => ["jpg90", "uint", 8],
     TIFF_PNG_INT8 => ["png", "uint", 8],
     TIFF_LZW_INT8 => ["lzw", "uint", 8],
     TIFF_ZIP_INT8 => ["zip", "uint", 8],
