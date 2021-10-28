@@ -6,7 +6,7 @@ Outils issus du projet [ROK4](https://github.com/rok4/rok4)
 
 Les outils testés sont ceux décrits [ici](https://github.com/rok4/rok4/tree/master/rok4generation#outils-de-manipulation)
 
-`docker run --rm --name test-rok4generation-tools rok4/rok4generation:3.7.1-buster`
+`docker run --rm --name test-rok4generation-tools rok4/rok4generation:3.10.1-debian10`
 
 
 ## Lancement d'une génération de pyramide raster

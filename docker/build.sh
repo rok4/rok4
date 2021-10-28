@@ -21,7 +21,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --help)
             echo "./build.sh <OPTIONS>"
-            echo "    --os buster|stretch|centos7"
+            echo "    --os debian10|centos7"
             echo "    --rok4server"
             echo "    --rok4generation"
             echo "    --proxy http://proxy.chez.vous:port"
