@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
             ;;
 
         --proxy)
-            build_params="$build_params --build-arg proxy=$2"
+            build_params="$build_params --build-arg http_proxy=$2 --build-arg https_proxy=$2"
             shift 2
             ;;
 

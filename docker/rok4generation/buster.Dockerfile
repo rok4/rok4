@@ -1,15 +1,8 @@
-FROM debian:buster-slim as builder
+FROM debian:buster-slim as libs
 
-ARG proxy=
-
-ENV http_proxy=${proxy}
-ENV https_proxy=${proxy}
-ENV ftp_proxy=${proxy}
-
-# Environnement de compilation
+# Librairies
 
 RUN apt update && apt -y install  \
-    build-essential cmake \
     libfcgi-dev \
     libtinyxml-dev \
     libopenjp2-7-dev \
@@ -24,18 +17,18 @@ RUN apt update && apt -y install  \
     librados-dev \
     perl-base \
     libgdal-perl libpq-dev gdal-bin \
-    libsqlite3-dev git \
-    libboost-log-dev libboost-filesystem-dev libboost-system-dev \
-    && rm -rf /var/lib/apt/lists/*
+    libsqlite3-dev \
+    libboost-log-dev libboost-filesystem-dev libboost-system-dev 
 
 RUN cpan -T Config::INI::Reader DBI DBD::Pg Data::Dumper Devel::Size Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent LWP::Protocol::https Math::BigFloat Term::ProgressBar Test::More Tie::File XML::LibXML JSON
 
-# Compilation et installation de tippecanoe
+#### Compilation de l'application
 
-RUN git clone --depth=1 https://github.com/mapbox/tippecanoe.git /tippecanoe
+FROM libs AS builder
 
-WORKDIR /tippecanoe
-RUN make -j && make install
+# Environnement de compilation
+
+RUN apt update && apt -y install build-essential cmake git
 
 # Compilation et installation des outils ROK4
 
@@ -52,16 +45,25 @@ COPY ./config/tileMatrixSet /sources/config/tileMatrixSet
 RUN mkdir -p /build
 WORKDIR /build
 
-RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_ROK4=0 /sources/ && make && make install && rm -r /build
+RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_ROK4=0 /sources/
+RUN make && make package
 
-# Nettoyage
+RUN git clone --depth=1 https://github.com/mapbox/tippecanoe.git /tippecanoe
+WORKDIR /tippecanoe
+RUN make -j && make install
 
-RUN apt remove -y build-essential cmake libfcgi-dev libboost-log-dev libboost-filesystem-dev libboost-system-dev libtinyxml-dev libopenjp2-7-dev zlib1g-dev libtiff5-dev libpng-dev libcurl4-openssl-dev libssl-dev libturbojpeg0-dev libjpeg-dev libc6-dev librados-dev libpq-dev libsqlite3-dev git
+#### Image de run à partir des libs et de l'exécutable compilé
 
-FROM builder
+FROM libs
 
 ENV PROJ_LIB=/etc/rok4/config/proj
 
 WORKDIR /
 
-CMD bash /sources/rok4generation/tools/tests.sh
+# Récupération des exécutables
+COPY --from=builder /usr/local/bin/tippecanoe /bin/tippecanoe
+COPY --from=builder /build/Rok4-*-Linux-64bit.tar.gz /
+
+RUN apt -y install procps wget gdal-bin && tar xvzf /Rok4-*-Linux-64bit.tar.gz
+
+CMD ls -l /bin

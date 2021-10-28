@@ -1,15 +1,8 @@
-FROM debian:buster-slim as builder
+FROM debian:buster-slim as libs
 
-ARG proxy=
-
-ENV http_proxy=${proxy}
-ENV https_proxy=${proxy}
-ENV ftp_proxy=${proxy}
-
-# Environnement de compilation
+# Librairies
 
 RUN apt update && apt -y install  \
-    build-essential cmake \
     libfcgi-dev \
     libtinyxml-dev \
     libopenjp2-7-dev \
@@ -22,8 +15,15 @@ RUN apt update && apt -y install  \
     libjpeg-dev \
     libc6-dev \
     librados-dev \
-    libboost-log-dev libboost-filesystem-dev libboost-system-dev \
-    && rm -rf /var/lib/apt/lists/*
+    libboost-log-dev libboost-filesystem-dev libboost-system-dev 
+
+#### Compilation de l'application
+
+FROM libs AS builder
+
+# Environnement de compilation
+
+RUN apt -y install build-essential cmake
 
 # Compilation et installation
 
@@ -42,16 +42,19 @@ WORKDIR /build
 
 RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_BE4=0 /sources/ && make && make install && rm -r /sources /build
 
-RUN apt remove -y build-essential cmake libfcgi-dev libtinyxml-dev libboost-log-dev libboost-filesystem-dev libboost-system-dev libopenjp2-7-dev zlib1g-dev libtiff5-dev libpng-dev libcurl4-openssl-dev libssl-dev libturbojpeg0-dev libjpeg-dev libc6-dev librados-dev 
+#### Image de run à partir des libs et de l'exécutable compilé
 
-FROM builder
+FROM libs
 
 ENV PROJ_LIB=/etc/rok4/config/proj
-
 WORKDIR /
 
-# Configuration
+# Récupération de l'exécutable
+COPY --from=builder /bin/rok4 /bin/rok4
+COPY --from=builder /etc/rok4/config/tileMatrixSet /etc/rok4/config/tileMatrixSet
+COPY --from=builder /etc/rok4/config/styles /etc/rok4/config/styles
 
+# Configuration
 COPY ./config/server.conf.docker /etc/rok4/config/server.conf
 COPY ./config/services.conf.docker /etc/rok4/config/services.conf
 COPY ./config/restrictedCRSList.txt.docker /etc/rok4/config/restrictedCRSList.txt
