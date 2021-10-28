@@ -97,12 +97,11 @@ La compilation du projet n’a pour le moment été validée que sous GNU/Linux 
 Afin de connaître les paquets et librairies à installer, référez vous aux Dockerfiles :
 
 * Compilation du serveur ROK4 :
-	* [Debian 9](./docker/rok4server/stretch.Dockerfile)
-	* [Debian 10](./docker/rok4server/buster.Dockerfile)
+	* [Debian 10](./docker/rok4server/debian10.Dockerfile)
 	* [Centos 7](./docker/rok4server/centos7.Dockerfile)
 
 * Compilation des outils de génération ROK4 :
-	* [Debian 10](./docker/rok4generation/buster.Dockerfile)
+	* [Debian 10](./docker/rok4generation/debian10.Dockerfile)
 
 ## Les commandes externes
 
