@@ -15,12 +15,17 @@ RUN apt update && apt -y install  \
     libjpeg-dev \
     libc6-dev \
     librados-dev \
-    perl-base \
-    libgdal-perl libpq-dev gdal-bin \
     libsqlite3-dev \
     libboost-log-dev libboost-filesystem-dev libboost-system-dev 
 
-RUN cpan -T Config::INI::Reader DBI DBD::Pg Data::Dumper Devel::Size Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent LWP::Protocol::https Math::BigFloat Term::ProgressBar Test::More Tie::File XML::LibXML JSON
+RUN apt -y install  \
+    perl-base \
+    libgdal-perl libpq-dev gdal-bin \
+    libfile-find-rule-perl libfile-copy-link-perl \
+    libconfig-ini-perl libdbi-perl libdbd-pg-perl libdevel-size-perl \
+    libdigest-sha-perl libfile-map-perl libfindbin-libs-perl libhttp-message-perl liblwp-protocol-https-perl \
+    libmath-bigint-perl libterm-progressbar-perl liblog-log4perl-perl libjson-perl \
+    libtest-simple-perl libxml-libxml-perl
 
 #### Compilation de l'application
 
@@ -29,6 +34,7 @@ FROM libs AS builder
 # Environnement de compilation
 
 RUN apt update && apt -y install build-essential cmake git
+RUN cpan -T JSON::Parse JSON
 
 # Compilation et installation des outils ROK4
 
@@ -60,10 +66,12 @@ ENV PROJ_LIB=/etc/rok4/config/proj
 
 WORKDIR /
 
-# Récupération des exécutables
+# Récupération des exécutables, configurations et librairies
 COPY --from=builder /usr/local/bin/tippecanoe /bin/tippecanoe
+COPY --from=builder /usr/local/lib/x86_64-linux-gnu/perl/5.28.1/JSON/** /usr/local/lib/x86_64-linux-gnu/perl/5.28.1/JSON/
+COPY --from=builder /usr/local/lib/x86_64-linux-gnu/perl/5.28.1/auto/JSON/ /usr/local/lib/x86_64-linux-gnu/perl/5.28.1/auto/JSON/
 COPY --from=builder /build/Rok4-*-Linux-64bit.tar.gz /
 
-RUN apt -y install procps wget gdal-bin && tar xvzf /Rok4-*-Linux-64bit.tar.gz
+RUN apt -y install procps wget && tar xvzf /Rok4-*-Linux-64bit.tar.gz
 
 CMD ls -l /bin

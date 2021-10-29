@@ -24,7 +24,7 @@ Il est aussi possible de définir toutes les variables d'environnement dans un f
 
 ## Lancement au sein d'une stack 
 
-Afin de tester facilement le serveur, il est possible de lancer une stack comprennant :
+Afin de tester facilement le serveur, il est possible de lancer une stack comprenant :
 
 * Un front NGINX, permettant l'interrogation du serveur en HTTP, avec une configuration minimale
 * Un serveur ROK4

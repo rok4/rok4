@@ -40,7 +40,7 @@ COPY ./config/tileMatrixSet /sources/config/tileMatrixSet
 RUN mkdir -p /build
 WORKDIR /build
 
-RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_BE4=0 /sources/ && make && make install && rm -r /sources /build
+RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_BE4=0 /sources/ && make && make install
 
 #### Image de run à partir des libs et de l'exécutable compilé
 
@@ -53,6 +53,7 @@ WORKDIR /
 COPY --from=builder /bin/rok4 /bin/rok4
 COPY --from=builder /etc/rok4/config/tileMatrixSet /etc/rok4/config/tileMatrixSet
 COPY --from=builder /etc/rok4/config/styles /etc/rok4/config/styles
+COPY --from=builder /etc/rok4/config/proj /etc/rok4/config/proj
 
 # Configuration
 COPY ./config/server.conf.docker /etc/rok4/config/server.conf

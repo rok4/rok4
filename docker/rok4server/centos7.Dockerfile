@@ -61,6 +61,7 @@ WORKDIR /
 COPY --from=builder /bin/rok4 /bin/rok4
 COPY --from=builder /etc/rok4/config/tileMatrixSet /etc/rok4/config/tileMatrixSet
 COPY --from=builder /etc/rok4/config/styles /etc/rok4/config/styles
+COPY --from=builder /etc/rok4/config/proj /etc/rok4/config/proj
 
 # Récupération des librairies boost
 COPY --from=builder /usr/lib/libboost_* /usr/lib/
