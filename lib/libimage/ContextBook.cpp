@@ -48,7 +48,13 @@
  */
 
 #include "ContextBook.h"
+#include "config_object.h"
 
+#if BUILD_OBJECT
+#include "CephPoolContext.h"
+#include "SwiftContext.h"
+#include "S3Context.h"
+#endif
 
 ContextBook::ContextBook(){}
 
