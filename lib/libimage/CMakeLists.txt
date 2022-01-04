@@ -39,6 +39,7 @@ endif(DEBUG_BUILD)
 # Définition des fichiers sources
 
 CONFIGURE_FILE(Jpeg2000_library_config.h.in Jpeg2000_library_config.h ESCAPE_QUOTES @ONLY)
+CONFIGURE_FILE(config_object.h.in config_object.h ESCAPE_QUOTES @ONLY)
 
 SET(
     libimage_SRCS Context.cpp ContextBook.cpp Palette.cpp Data.cpp Decoder.cpp PenteImage.cpp AspectImage.cpp
