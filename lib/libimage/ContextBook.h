@@ -56,12 +56,6 @@
 #include "Context.h"
 #include "FileContext.h"
 
-#if BUILD_OBJECT
-#include "CephPoolContext.h"
-#include "SwiftContext.h"
-#include "S3Context.h"
-#endif
-
 class ContextBook {
 
 private:
