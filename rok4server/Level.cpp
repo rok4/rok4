@@ -46,7 +46,7 @@
 #include "TiffEncoder.h"
 #include "TiffHeaderDataSource.h"
 #include <cmath>
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Kernel.h"
 #include <vector>
 #include "Pyramid.h"
@@ -54,7 +54,6 @@
 #include "FileContext.h"
 #include "PaletteDataSource.h"
 #include "Format.h"
-#include "intl.h"
 #include "config.h"
 #include <cstddef>
 #include <sys/stat.h>
@@ -109,7 +108,7 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
     tm = tms->getTm(obj->tm->getId());
 
     if (tm == NULL) {
-        LOGGER_ERROR ( "Un niveau de pyramide cloné reference un niveau de TMS [" << obj->tm->getId() << "] qui n'existe plus." );
+        BOOST_LOG_TRIVIAL(error) <<  "Un niveau de pyramide cloné reference un niveau de TMS [" << obj->tm->getId() << "] qui n'existe plus." ;
         return;
     }
 
@@ -122,7 +121,7 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
             Pyramid* pOrig = reinterpret_cast<Pyramid*>(obj->sSources.at(i));
             Pyramid* pS = new Pyramid(pOrig, sxml);
             if (pS->getTms() == NULL) {
-                LOGGER_ERROR("Impossible de cloner la pyramide source pour ce niveau");
+                BOOST_LOG_TRIVIAL(error) << "Impossible de cloner la pyramide source pour ce niveau";
                 tm == NULL;
                 // Tester la nullité du TM en sortie pour faire remonter l'erreur
                 return;
@@ -131,7 +130,7 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
             // On récupère bien le pointeur vers le nouveau style (celui de la nouvelle liste)
             Style* pSt = sxml->getStyle(pOrig->getStyle()->getId());
             if ( pSt == NULL ) {
-                LOGGER_ERROR ( "Une pyramide source clonée reference un style [" << pOrig->getStyle()->getId() <<  "] qui n'existe plus." );
+                BOOST_LOG_TRIVIAL(error) <<  "Une pyramide source clonée reference un style [" << pOrig->getStyle()->getId() <<  "] qui n'existe plus." ;
                 pSt = sxml->getStyle("normal");
             }
             pS->setStyle(pSt);
@@ -165,7 +164,7 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
             //TODO : tester ce mode "copie" 
             context = sxml->getContextBook()->addContext(obj->context->getType(),obj->context->getTray());
         } else {
-            LOGGER_ERROR ( "Impossible de se connecter aux donnees");
+            BOOST_LOG_TRIVIAL(error) <<  "Impossible de se connecter aux donnees";
             tm == NULL;
             return;
         }
@@ -208,7 +207,7 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
     grid->bbox.print();
 
     if ( ! ( grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() ) ) ) {
-        LOGGER_DEBUG("Impossible de reprojeter la grid");
+        BOOST_LOG_TRIVIAL(debug) << "Impossible de reprojeter la grid";
         error = 1; // BBox invalid
         delete grid;
         return 0;
@@ -217,7 +216,7 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
     //la reprojection peut marcher alors que la bbox contient des NaN
     //cela arrive notamment lors que la bbox envoyée par l'utilisateur n'est pas dans le crs specifié par ce dernier
     if (grid->bbox.xmin != grid->bbox.xmin || grid->bbox.xmax != grid->bbox.xmax || grid->bbox.ymin != grid->bbox.ymin || grid->bbox.ymax != grid->bbox.ymax ) {
-        LOGGER_DEBUG("Bbox de la grid contenant des NaN");
+        BOOST_LOG_TRIVIAL(debug) << "Bbox de la grid contenant des NaN";
         error = 1;
         delete grid;
         return 0;
@@ -244,7 +243,7 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
 
     Image* image = getwindow ( servicesConf, bbox_int, error );
     if ( !image ) {
-        LOGGER_DEBUG ( _ ( "Image invalid !" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "Image invalid !" ;
         return 0;
     }
 
@@ -296,13 +295,13 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
 
     Image* imageout = getwindow ( servicesConf, bbox_int, error );
     if ( !imageout ) {
-        LOGGER_DEBUG ( _ ( "Image invalid !" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "Image invalid !" ;
         return 0;
     }
 
     // On affecte la bonne bbox à l'image source afin que la classe de réechantillonnage calcule les bonnes valeurs d'offset
     if (! imageout->setDimensions ( bbox_int.xmax - bbox_int.xmin, bbox_int.ymax - bbox_int.ymin, BoundingBox<double> ( bbox_int ), 1.0, 1.0 ) ) {
-        LOGGER_DEBUG ( _ ( "Dimensions invalid !" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "Dimensions invalid !" ;
         return 0;
     }
 
@@ -327,12 +326,12 @@ Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox
     int tile_xmax=euclideanDivisionQuotient ( bbox.xmax -1,tm->getTileW() );
     int nbx = tile_xmax - tile_xmin + 1;
     if ( nbx >= servicesConf->getMaxTileX() ) {
-        LOGGER_INFO ( _ ( "Too Much Tile on X axis" ) );
+        BOOST_LOG_TRIVIAL(info) <<   "Too Much Tile on X axis" ;
         error=2;
         return 0;
     }
     if (nbx == 0) {
-        LOGGER_INFO("nbx = 0");
+        BOOST_LOG_TRIVIAL(info) << "nbx = 0";
         error=1;
         return 0;
     }
@@ -341,12 +340,12 @@ Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox
     int tile_ymax = euclideanDivisionQuotient ( bbox.ymax-1,tm->getTileH() );
     int nby = tile_ymax - tile_ymin + 1;
     if ( nby >= servicesConf->getMaxTileY() ) {
-        LOGGER_INFO ( _ ( "Too Much Tile on Y axis" ) );
+        BOOST_LOG_TRIVIAL(info) <<   "Too Much Tile on Y axis" ;
         error=2;
         return 0;
     }
     if (nby == 0) {
-        LOGGER_INFO("nby = 0");
+        BOOST_LOG_TRIVIAL(info) << "nby = 0";
         error=1;
         return 0;
     }
@@ -382,7 +381,7 @@ Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox
 std::string Level::getPath ( int tilex, int tiley) {
     // Cas normalement filtré en amont (exception WMS/WMTS)
     if ( tilex < 0 || tiley < 0 ) {
-        LOGGER_ERROR ( _ ( "Indice de tuile negatif" ) );
+        BOOST_LOG_TRIVIAL(error) <<   "Indice de tuile negatif" ;
         return "";
     }
 
@@ -401,7 +400,7 @@ std::string Level::getDirPath ( int tilex, int tiley ) {
         std::string file = getPath(tilex,tiley);
         return file.substr(0,file.find_last_of("/"));        
     } else {
-        LOGGER_ERROR ( _ ( "getDirPath n'a pas de sens dans le cas d'un contexte non fichier" ) );
+        BOOST_LOG_TRIVIAL(error) <<   "getDirPath n'a pas de sens dans le cas d'un contexte non fichier" ;
         return "";
     }
 
@@ -444,7 +443,7 @@ DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des c
     // Les index sont stockés à partir de l'octet ROK4_IMAGE_HEADER_SIZE
     uint32_t posoff=ROK4_IMAGE_HEADER_SIZE+4*n, possize=ROK4_IMAGE_HEADER_SIZE+tilesPerWidth*tilesPerHeight*4+4*n;
     std::string path=getPath ( x, y);
-    LOGGER_DEBUG ( path );
+    BOOST_LOG_TRIVIAL(debug) <<  path ;
     return new StoreDataSource ( path, posoff, possize, ROK4_IMAGE_HEADER_SIZE + 2*4*tilesPerWidth*tilesPerHeight, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
 }
 
@@ -461,7 +460,7 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
 
     if ( format==Rok4Format::TIFF_RAW_INT8 || format==Rok4Format::TIFF_RAW_FLOAT32 )
         return encData;
-    else if ( format==Rok4Format::TIFF_JPG_INT8 )
+    else if ( format==Rok4Format::TIFF_JPG_INT8 || format==Rok4Format::TIFF_JPG90_INT8 )
         return new DataSourceDecoder<JpegDecoder> ( encData );
     else if ( format==Rok4Format::TIFF_PNG_INT8 )
         return new DataSourceDecoder<PngDecoder> ( encData );
@@ -471,7 +470,7 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
         return new DataSourceDecoder<DeflateDecoder> ( encData );
     else if ( format==Rok4Format::TIFF_PKB_INT8 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         return new DataSourceDecoder<PackBitsDecoder> ( encData );
-    LOGGER_ERROR ( _ ( "Type d'encodage inconnu : " ) <<format );
+    BOOST_LOG_TRIVIAL(error) <<   "Type d'encodage inconnu : " <<format ;
     return 0;
 }
 
@@ -479,17 +478,20 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
 DataSource* Level::getTile (int x, int y) {
 
     DataSource* source = getEncodedTile ( x, y );
-    if (source == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+    if (source == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND,  "No data found", "wmts" ) );
 
     size_t size;
-    if (source->getData ( size ) == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+    if (source->getData ( size ) == NULL) {
+        delete source;
+        return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND,  "No data found", "wmts" ) );
+    }
 
     if ( format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_LZW_INT8 ||
          format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_INT8 ||
          format == Rok4Format::TIFF_PKB_FLOAT32 || format == Rok4Format::TIFF_PKB_INT8
         )
     {
-        LOGGER_DEBUG ( _ ( "GetTile Tiff" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "GetTile Tiff" ;
         TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( source,format,channels,tm->getTileW(), tm->getTileH() );
         return fullTiffDS;
     }
@@ -499,7 +501,7 @@ DataSource* Level::getTile (int x, int y) {
 
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
     int pixel_size=1;
-    LOGGER_DEBUG ( _ ( "GetTile Image" ) );
+    BOOST_LOG_TRIVIAL(debug) <<   "GetTile Image" ;
     if ( format==Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         pixel_size=4;
 

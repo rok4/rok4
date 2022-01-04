@@ -52,7 +52,6 @@ class LevelXML;
 #include "Attribute.h"
 
 #include "config.h"
-#include "intl.h"
 
 class LevelXML : public DocumentXML
 {

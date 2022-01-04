@@ -83,6 +83,7 @@ filepath_conf = /home/IGN/SOURCE/sources.json
 | CEPH             | pyr_data_pool_name      |                                                                             | obligatoire                      |
 
 Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution :
+
 * CEPH
     - ROK4_CEPH_CONFFILE
     - ROK4_CEPH_USERNAME
@@ -97,6 +98,7 @@ Dans le cas du stockage objet, certaines variables d'environnement doivent être
 | update_mode       | Mode de mise à jour                                                                      | obligatoire si `pyr_name_old` est présent |
 
 Valeurs pour `update_mode` :
+
 * `slink` : une nouvelle pyramide est créée, et les dalles de la pyramide ancêtre sont référencées avec un lien symbolique ou un objet symbolique
 * `hlink` : disponible pour le stockage fichier uniquement, une nouvelle pyramide est créée, et les dalles de la pyramide ancêtre sont référencées avec un lien physique
 * `copy` : une nouvelle pyramide est créée, et les dalles de la pyramide ancêtre sont recopiée dans la nouvelle pyramide
@@ -240,6 +242,7 @@ Pour générer une pyramide vecteur, il faut renseigner pour chaque niveau de co
 ## Résumé des fichiers et dossiers manipulés
 
 Avec les configurations mises en exemple :
+
 * La configuration principale `/home/IGN/conf.txt`
 * La configuration d'environnement `/home/IGN/env.txt`
 * La configuration de la source de données `/home/ign/SOURCE/sources.json`

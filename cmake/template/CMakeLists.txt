@@ -1,17 +1,12 @@
 #Défini le nom du projet 
 project(nom_projet)
 
-#définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
+#définit la version du projet
 #Lecture de la version dans le fichier README 
-FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README version_line REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+(-SNAPSHOT)?")
+FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/README.md version_line REGEX "ROK4 Version : [0-9A-Za-z-_.]+")
 STRING(SUBSTRING ${version_line} 15 -1 version)
 
-STRING(REPLACE "." ";" ROK4_VERSION ${version})
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
-
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.4)
 
 ########################################
 #Attention aux chemins
@@ -59,10 +54,10 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 #Définition des dépendances.
 #include(ROK4Dependencies)
 
-#set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
+#set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-#set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff)
+#set(DEP_LIBRARY fcgi tinyxml image proj jpeg zlib tiff)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 

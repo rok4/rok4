@@ -1,11 +1,6 @@
 #Défini le nom du projet 
 project(libimage)
 
-#définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
-
 ########################################
 #Attention aux chemins
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules ${CMAKE_MODULE_PATH})
@@ -52,7 +47,7 @@ SET(
     FileContext.cpp CurlPool.cpp 
     PaletteConfig.cpp PaletteDataSource.cpp
     Format.cpp TiffHeaderDataSource.cpp StoreDataSource.cpp
-    ConvertedChannelsImage.cpp
+    ConvertedChannelsImage.cpp ContextBook.cpp
 )
 
 # OPTION : 'sources' JPEG2000
@@ -75,7 +70,7 @@ ADD_LIBRARY(image STATIC ${libimage_SRCS})
 
 INCLUDE(ROK4Dependencies)
 
-SET(DEP_INCLUDE_DIR ${TURBOJPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} ${JPEG2000_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
+SET(DEP_INCLUDE_DIR ${TURBOJPEG_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} ${JPEG2000_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
 
 IF(BUILD_OBJECT)
   SET(DEP_INCLUDE_DIR ${DEP_INCLUDE_DIR} ${RADOS_INCLUDE_DIR})
@@ -85,7 +80,7 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DE
 
 ########################################
 # Listes des bibliothèques à liées avec l'éxecutable
-SET(DEP_LIBRARY logger proj turbojpeg jpeg zlib tiff lzw pkb png jpeg2000 curl openssl crypto)
+SET(DEP_LIBRARY proj turbojpeg jpeg zlib tiff lzw pkb png jpeg2000 curl openssl crypto)
 
 IF(BUILD_OBJECT)
   SET(DEP_LIBRARY ${DEP_LIBRARY} rados)

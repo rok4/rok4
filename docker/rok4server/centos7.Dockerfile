@@ -1,31 +1,36 @@
-FROM centos:7 as builder
+FROM centos:7 as libs
 
-ARG proxy=
-
-ENV http_proxy=${proxy}
-ENV https_proxy=${proxy}
-ENV ftp_proxy=${proxy}
+# Librairies
 
 RUN yum -y update && yum -y install epel-release centos-release-scl-rh
 
-# Environnement de compilation
-
-RUN yum -y --enablerepo=extras install \
-        make cmake gcc gcc-c++ devtoolset-7-gcc-c++ \
+RUN yum -y update && \
+        yum -y --enablerepo=extras install \
         fcgi-devel \
         tinyxml-devel \
         openjpeg2-devel \
-        gettext \
         zlib-devel \
         libtiff-devel \
         libpng-devel \
         libcurl-devel \
+        proj-devel \
         openssl-devel \
         turbojpeg-devel \
         libjpeg-turbo-devel \
         librados2-devel
 
+#### Compilation de l'application
+
+FROM libs AS builder
+
+# Environnement de compilation
+
+RUN yum -y --enablerepo=extras install make cmake gcc gcc-c++ devtoolset-7-gcc-c++
 ENV PATH=/opt/rh/devtoolset-7/root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Compilation et installation des librairies boost
+RUN curl -L -o /boost_1_77_0.tar.gz "https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz" && tar xvf /boost_1_77_0.tar.gz
+RUN cd /boost_1_77_0 && ./bootstrap.sh --prefix=/usr && ./b2 install --with-log --with-filesystem --with-system --with-thread
 
 # Compilation et installation
 
@@ -42,18 +47,27 @@ COPY ./config/tileMatrixSet /sources/config/tileMatrixSet
 RUN mkdir -p /build
 WORKDIR /build
 
-RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_BE4=0 /sources/ && make && make install && rm -r /sources /build
+RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_BE4=0 /sources/ && make && make install
 
-RUN yum -y remove make cmake gcc gcc-c++ devtoolset-7-gcc-c++ fcgi-devel tinyxml-devel openjpeg2-devel zlib-devel libtiff-devel libpng-devel libcurl-devel openssl-devel turbojpeg-devel libjpeg-turbo-devel librados2-devel
+#### Image de run à partir des libs et de l'exécutable compilé
 
-FROM builder
+FROM libs
 
 ENV PROJ_LIB=/etc/rok4/config/proj
 
 WORKDIR /
 
-# Configuration
+# Récupération de l'exécutable
+COPY --from=builder /bin/rok4 /bin/rok4
+COPY --from=builder /etc/rok4/config/tileMatrixSet /etc/rok4/config/tileMatrixSet
+COPY --from=builder /etc/rok4/config/styles /etc/rok4/config/styles
+COPY --from=builder /etc/rok4/config/proj /etc/rok4/config/proj
 
+# Récupération des librairies boost
+COPY --from=builder /usr/lib/libboost_* /usr/lib/
+RUN ldconfig
+
+# Configuration
 COPY ./config/server.conf.docker /etc/rok4/config/server.conf
 COPY ./config/services.conf.docker /etc/rok4/config/services.conf
 COPY ./config/restrictedCRSList.txt.docker /etc/rok4/config/restrictedCRSList.txt

@@ -103,34 +103,34 @@ bool SwiftContext::connection() {
         char* tf = getenv (ROK4_SWIFT_TOKEN_FILE);
         if (tf != NULL && use_token_from_file) {
             token_file.assign(tf);
-            LOGGER_DEBUG("ROK4_SWIFT_TOKEN_FILE detected: " << token_file);
+            BOOST_LOG_TRIVIAL(debug) << "ROK4_SWIFT_TOKEN_FILE detected: " << token_file;
 
             std::fstream token_stream;
             token_stream.open(token_file, std::fstream::in);
             if (! token_stream) {
                 token_stream.close();
-                LOGGER_DEBUG("File " << token_file << " does not exist");
+                BOOST_LOG_TRIVIAL(debug) << "File " << token_file << " does not exist";
             }
             else if ( token_stream.is_open() ) {
                 getline(token_stream, token);
                 token_stream.close();
-                LOGGER_DEBUG("File " << token_file << " exists: token loaded " << token);
+                BOOST_LOG_TRIVIAL(debug) << "File " << token_file << " exists: token loaded " << token;
                 connected = true;
                 return true;
             } else {
                 token_stream.close();
-                LOGGER_WARN("File " << token_file << " could not be opened");
+                BOOST_LOG_TRIVIAL(warning) << "File " << token_file << " could not be opened";
             }
         }
         
         use_token_from_file = false;
 
         if (keystone_auth) {
-            LOGGER_DEBUG("Keystone authentication");
+            BOOST_LOG_TRIVIAL(debug) << "Keystone authentication";
 
             char* domain = getenv (ROK4_KEYSTONE_DOMAINID);
             if (domain == NULL) {
-                LOGGER_ERROR("We need a domain id (ROK4_KEYSTONE_DOMAINID) for a keystone authentication");
+                BOOST_LOG_TRIVIAL(error) << "We need a domain id (ROK4_KEYSTONE_DOMAINID) for a keystone authentication";
                 return false;
             } else {
                 domain_id.assign(domain);
@@ -138,7 +138,7 @@ bool SwiftContext::connection() {
 
             char* project = getenv (ROK4_KEYSTONE_PROJECTID);
             if (project == NULL) {
-                LOGGER_ERROR("We need a project id (ROK4_KEYSTONE_PROJECTID) for a keystone authentication");
+                BOOST_LOG_TRIVIAL(error) << "We need a project id (ROK4_KEYSTONE_PROJECTID) for a keystone authentication";
                 return false;
             } else {
                 project_id.assign(project);
@@ -181,8 +181,8 @@ bool SwiftContext::connection() {
 
                 res = curl_easy_perform(curl);
                 if( CURLE_OK != res) {
-                    LOGGER_ERROR("Cannot authenticate to Keystone");
-                    LOGGER_ERROR(curl_easy_strerror(res));
+                    BOOST_LOG_TRIVIAL(error) << "Cannot authenticate to Keystone";
+                    BOOST_LOG_TRIVIAL(error) << curl_easy_strerror(res);
                     curl_slist_free_all(list);
                     return false;
                 }
@@ -190,8 +190,8 @@ bool SwiftContext::connection() {
                 long http_code = 0;
                 curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
                 if (http_code < 200 || http_code > 299) {
-                    LOGGER_ERROR("Cannot authenticate to Keystone");
-                    LOGGER_ERROR("Response HTTP code : " << http_code);
+                    BOOST_LOG_TRIVIAL(error) << "Cannot authenticate to Keystone";
+                    BOOST_LOG_TRIVIAL(error) << "Response HTTP code : " << http_code;
                     curl_slist_free_all(list);
                     return false;
                 }
@@ -203,11 +203,11 @@ bool SwiftContext::connection() {
             }
         } else {
 
-            LOGGER_DEBUG("Swift authentication");
+            BOOST_LOG_TRIVIAL(debug) << "Swift authentication";
 
             char* account = getenv (ROK4_SWIFT_ACCOUNT);
             if (account == NULL) {
-                LOGGER_ERROR("We need an account (ROK4_SWIFT_ACCOUNT) for a Swift authentication");
+                BOOST_LOG_TRIVIAL(error) << "We need an account (ROK4_SWIFT_ACCOUNT) for a Swift authentication";
                 return false;
             } else {
                 user_account.assign(account);
@@ -259,8 +259,8 @@ bool SwiftContext::connection() {
 
             res = curl_easy_perform(curl);
             if( CURLE_OK != res) {
-                LOGGER_ERROR("Cannot authenticate to Swift");
-                LOGGER_ERROR(curl_easy_strerror(res));
+                BOOST_LOG_TRIVIAL(error) << "Cannot authenticate to Swift";
+                BOOST_LOG_TRIVIAL(error) << curl_easy_strerror(res);
                 curl_slist_free_all(list);
                 return false;
             }
@@ -268,8 +268,8 @@ bool SwiftContext::connection() {
             long http_code = 0;
             curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
             if (http_code < 200 || http_code > 299) {
-                LOGGER_ERROR("Cannot authenticate to Swift");
-                LOGGER_ERROR("Response HTTP code : " << http_code);
+                BOOST_LOG_TRIVIAL(error) << "Cannot authenticate to Swift";
+                BOOST_LOG_TRIVIAL(error) << "Response HTTP code : " << http_code;
                 curl_slist_free_all(list);
                 return false;
             }
@@ -289,11 +289,11 @@ bool SwiftContext::connection() {
 int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 
     if (! connected) {
-        LOGGER_ERROR("Impossible de lire via un contexte non connecté");
+        BOOST_LOG_TRIVIAL(error) << "Impossible de lire via un contexte non connecté";
         return -1;
     }
 
-    LOGGER_DEBUG("Swift read : " << size << " bytes (from the " << offset << " one) in the object " << name);
+    BOOST_LOG_TRIVIAL(debug) << "Swift read : " << size << " bytes (from the " << offset << " one) in the object " << name;
 
     int attempt = 1;
     bool reconnection = false;
@@ -329,15 +329,15 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, data_callback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
 
-        LOGGER_DEBUG("SWIFT READ START (" << size << ") " << pthread_self());
+        BOOST_LOG_TRIVIAL(debug) << "SWIFT READ START (" << size << ") " << pthread_self();
         res = curl_easy_perform(curl);
-        LOGGER_DEBUG("SWIFT READ END (" << size << ") " << pthread_self());
+        BOOST_LOG_TRIVIAL(debug) << "SWIFT READ END (" << size << ") " << pthread_self();
         
         curl_slist_free_all(list);
 
         if( CURLE_OK != res) {
-            LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);
-            LOGGER_ERROR(curl_easy_strerror(res));
+            BOOST_LOG_TRIVIAL(error) << "Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name;
+            BOOST_LOG_TRIVIAL(error) << curl_easy_strerror(res);
             return -1;
         }
 
@@ -347,22 +347,22 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
         // Nous avons un refus d'accès, cela peut venir d'une authentification expirée
         // Nous faisons une nouvelle demande de token et réessayons une fois (hors compte des tentatives de lecture)
         if ( ! reconnection && (http_code == 403 || http_code == 401 || http_code == 400) ) {
-            LOGGER_DEBUG("Authentication may have expired. Reconnecting...");
+            BOOST_LOG_TRIVIAL(debug) << "Authentication may have expired. Reconnecting...";
             connected = false;
             reconnection = true;
             token = "";
             use_token_from_file = false;
             if (! connection()) {
-                LOGGER_ERROR("Reconnection attempt failed.");
+                BOOST_LOG_TRIVIAL(error) << "Reconnection attempt failed.";
                 return -1;
             }
-            LOGGER_DEBUG("Successfully reconnected.");
+            BOOST_LOG_TRIVIAL(debug) << "Successfully reconnected.";
             continue;
         }
 
         if (http_code < 200 || http_code > 299) {
-            LOGGER_ERROR ( "Try " << attempt << " failed" );
-            LOGGER_ERROR("Response HTTP code : " << http_code);
+            BOOST_LOG_TRIVIAL(error) <<  "Try " << attempt << " failed" ;
+            BOOST_LOG_TRIVIAL(error) << "Response HTTP code : " << http_code;
             attempt++;
             continue;
         }
@@ -371,20 +371,20 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
         return chunk.size;
     }
 
-    LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the Swift object " << name  << " after " << attempts << " tries" );
+    BOOST_LOG_TRIVIAL(error) <<  "Unable to read " << size << " bytes (from the " << offset << " one) in the Swift object " << name  << " after " << attempts << " tries" ;
     return -1;
 }
 
 bool SwiftContext::write(uint8_t* data, int offset, int size, std::string name) {
-    LOGGER_DEBUG("Swift write : " << size << " bytes (from the " << offset << " one) in the writing buffer " << name);
+    BOOST_LOG_TRIVIAL(debug) << "Swift write : " << size << " bytes (from the " << offset << " one) in the writing buffer " << name;
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 == writingBuffers.end() ) {
         // pas de buffer pour ce nom d'objet
-        LOGGER_ERROR("No writing buffer for the name " << name);
+        BOOST_LOG_TRIVIAL(error) << "No writing buffer for the name " << name;
         return false;
     }
-    LOGGER_DEBUG("old length: " << it1->second->size());
+    BOOST_LOG_TRIVIAL(debug) << "old length: " << it1->second->size();
    
     // Calcul de la taille finale et redimensionnement éventuel du vector
     if (it1->second->size() < size + offset) {
@@ -392,18 +392,18 @@ bool SwiftContext::write(uint8_t* data, int offset, int size, std::string name) 
     }
 
     memcpy(&((*(it1->second))[0]) + offset, data, size);
-    LOGGER_DEBUG("new length: " << it1->second->size());
+    BOOST_LOG_TRIVIAL(debug) << "new length: " << it1->second->size();
 
     return true;
 }
 
 bool SwiftContext::writeFull(uint8_t* data, int size, std::string name) {
-    LOGGER_DEBUG("Swift write : " << size << " bytes (one shot) in the writing buffer " << name);
+    BOOST_LOG_TRIVIAL(debug) << "Swift write : " << size << " bytes (one shot) in the writing buffer " << name;
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 == writingBuffers.end() ) {
         // pas de buffer pour ce nom d'objet
-        LOGGER_ERROR("No Swift writing buffer for the name " << name);
+        BOOST_LOG_TRIVIAL(error) << "No Swift writing buffer for the name " << name;
         return false;
     }
 
@@ -432,7 +432,7 @@ bool SwiftContext::openToWrite(std::string name) {
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 != writingBuffers.end() ) {
-        LOGGER_ERROR("A Swift writing buffer already exists for the name " << name);
+        BOOST_LOG_TRIVIAL(error) << "A Swift writing buffer already exists for the name " << name;
         return false;
 
     } else {
@@ -448,11 +448,11 @@ bool SwiftContext::closeToWrite(std::string name) {
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 == writingBuffers.end() ) {
-        LOGGER_ERROR("The Swift writing buffer with name " << name << "does not exist, cannot flush it");
+        BOOST_LOG_TRIVIAL(error) << "The Swift writing buffer with name " << name << "does not exist, cannot flush it";
         return false;
     }
 
-    LOGGER_DEBUG("Write buffered " << it1->second->size() << " bytes in the Swift object " << name);
+    BOOST_LOG_TRIVIAL(debug) << "Write buffered " << it1->second->size() << " bytes in the Swift object " << name;
 
 
     int attempt = 1;
@@ -482,8 +482,8 @@ bool SwiftContext::closeToWrite(std::string name) {
         curl_slist_free_all(list);
 
         if( CURLE_OK != res) {
-            LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the Swift object " << name );
-            LOGGER_ERROR(curl_easy_strerror(res));
+            BOOST_LOG_TRIVIAL(error) <<  "Unable to flush " << it1->second->size() << " bytes in the Swift object " << name ;
+            BOOST_LOG_TRIVIAL(error) << curl_easy_strerror(res);
             return false;
         }
 
@@ -493,34 +493,34 @@ bool SwiftContext::closeToWrite(std::string name) {
         // Nous avons un refus d'accès, cela peut venir d'une authentification expirée
         // Nous faisons une nouvelle demande de token et réessayons une fois (hors compte des tentatives de lecture)
         if ( ! reconnection && (http_code == 403 || http_code == 401 || http_code == 400) ) {
-            LOGGER_DEBUG("Authentication may have expired. Reconnecting...");
+            BOOST_LOG_TRIVIAL(debug) << "Authentication may have expired. Reconnecting...";
             connected = false;
             reconnection = true;
             token = "";
             use_token_from_file = false;
             if (! connection()) {
-                LOGGER_ERROR("Reconnection attempt failed.");
+                BOOST_LOG_TRIVIAL(error) << "Reconnection attempt failed.";
                 return false;
             }
-            LOGGER_DEBUG("Successfully reconnected.");
+            BOOST_LOG_TRIVIAL(debug) << "Successfully reconnected.";
             continue;
         }
 
 
         if (http_code < 200 || http_code > 299) {
-            LOGGER_ERROR ( "Try " << attempt << " failed" );
-            LOGGER_ERROR("Response HTTP code : " << http_code);
+            BOOST_LOG_TRIVIAL(error) <<  "Try " << attempt << " failed" ;
+            BOOST_LOG_TRIVIAL(error) << "Response HTTP code : " << http_code;
             attempt++;
             continue;
         }
 
-        LOGGER_DEBUG("Erase the flushed buffer");
+        BOOST_LOG_TRIVIAL(debug) << "Erase the flushed buffer";
         delete it1->second;
         writingBuffers.erase(it1);
         return true;
     }
 
-    LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the Swift object " << name << " after " << attempts << " tries" );
+    BOOST_LOG_TRIVIAL(error) <<  "Unable to flush " << it1->second->size() << " bytes in the Swift object " << name << " after " << attempts << " tries" ;
 
     return false;
 }

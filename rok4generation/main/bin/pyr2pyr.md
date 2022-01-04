@@ -80,6 +80,7 @@ tms_path=/home/IGN/TMS/
 | SWIFT            | `pyr_data_container_name` |                                                                             | obligatoire                      |
 
 Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution :
+
 * CEPH
     - `ROK4_CEPH_CONFFILE`
     - `ROK4_CEPH_USERNAME`
@@ -135,6 +136,7 @@ job_number = 2
 ## Résumé des fichiers et dossiers manipulés
 
 Avec les configurations mises en exemple (pas le service WMS) :
+
 * La configuration `/home/IGN/conf.txt`
 * Le descripteur de la pyramide à copier `/home/IGN/SOURCE_PYRAMID.pyr`
 * La liste des dalles de la pyramide à copier `/home/IGN/SOURCE_PYRAMID.list`

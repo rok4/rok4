@@ -52,7 +52,7 @@
  */
 
 #include "DecimatedImage.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 
 
@@ -145,7 +145,7 @@ DecimatedImage::DecimatedImage ( int width, int height, int channels, double res
     
     // Centre X de la première colonne de pixels de l'image décimée
     double x1_centre = bbox.xmin + 0.5 * resx;
-    LOGGER_DEBUG("x1centre = " << x1_centre);
+    BOOST_LOG_TRIVIAL(debug) << "x1centre = " << x1_centre;
     
     // Centre X de la dernière colonne de pixels de l'image décimée
     double xd_centre = bbox.xmax - 0.5 * resx;
@@ -165,11 +165,11 @@ DecimatedImage::DecimatedImage ( int width, int height, int channels, double res
         double x_cur = x1_centre;
         imageOffsetX = 0;
         while (x_cur < image->getBbox().xmin) {
-        LOGGER_DEBUG("x1centre = " << x_cur);
+        BOOST_LOG_TRIVIAL(debug) << "x1centre = " << x_cur;
             imageOffsetX++;
             x_cur += resx;
         }
-        LOGGER_DEBUG("x1centre = " << x_cur);
+        BOOST_LOG_TRIVIAL(debug) << "x1centre = " << x_cur;
         sourceOffsetX = image->x2c ( x_cur );
         
         // On va chercher le nombre de pixels à piocher dans l'image source pour constituer une ligne
@@ -184,7 +184,7 @@ DecimatedImage::DecimatedImage ( int width, int height, int channels, double res
         
         // TEST
         if ((xd_src - sourceOffsetX) % ratioX != 0) {
-            LOGGER_WARN("(xd_src - sourceOffsetX) % ratioX != 0");
+            BOOST_LOG_TRIVIAL(warning) << "(xd_src - sourceOffsetX) % ratioX != 0";
         }
     }    
     
@@ -196,7 +196,7 @@ DecimatedImage::DecimatedImage ( int width, int height, int channels, double res
 DecimatedImage* DecimatedImageFactory::createDecimatedImage ( Image* image, BoundingBox<double> bb, double res_x, double res_y, int* nodata ) {
 
     if ( image == NULL ) {
-        LOGGER_ERROR ( "No source image to define decimated image" );
+        BOOST_LOG_TRIVIAL(error) <<  "No source image to define decimated image" ;
         return NULL;
     }
     
@@ -204,13 +204,13 @@ DecimatedImage* DecimatedImageFactory::createDecimatedImage ( Image* image, Boun
     double intpart;
     double phi = modf ( res_x/image->getResX(), &intpart );
     if (phi > 0.0001 && phi < 0.9999) {
-        LOGGER_ERROR ( "Decimated image resolution must be a multiple of source image's resolution (x wise)" );
+        BOOST_LOG_TRIVIAL(error) <<  "Decimated image resolution must be a multiple of source image's resolution (x wise)" ;
         return NULL;        
     }
     
     phi = modf ( res_y/image->getResY(), &intpart );
     if (phi > 0.0001 && phi < 0.9999) {
-        LOGGER_ERROR ( "Decimated image resolution must be a multiple of source image's resolution (y wise)" );
+        BOOST_LOG_TRIVIAL(error) <<  "Decimated image resolution must be a multiple of source image's resolution (y wise)" ;
         return NULL;        
     }
     
@@ -230,13 +230,13 @@ DecimatedImage* DecimatedImageFactory::createDecimatedImage ( Image* image, Boun
     
     phi = modf ( (x_centre - x_centre_src) / image->getResX(), &intpart );
     if (phi > 0.0001 && phi < 0.9999) {
-        LOGGER_ERROR ( "Decimated image pixel center must be aligned with a source image's pixel's center (x wise)" );
+        BOOST_LOG_TRIVIAL(error) <<  "Decimated image pixel center must be aligned with a source image's pixel's center (x wise)" ;
         return NULL;        
     }
     
     phi = modf ( (y_centre - y_centre_src) / image->getResY(), &intpart );
     if (phi > 0.0001 && phi < 0.9999) {
-        LOGGER_ERROR ( "Decimated image pixel center must be aligned with a source image's pixel's center (y wise)" );
+        BOOST_LOG_TRIVIAL(error) <<  "Decimated image pixel center must be aligned with a source image's pixel's center (y wise)" ;
         return NULL;        
     }
     

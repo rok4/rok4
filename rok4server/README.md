@@ -2,16 +2,16 @@
 
 <!-- TOC START min:1 max:3 link:true update:true -->
 - [Utiliser ROK4SERVER via NGINX](#utiliser-rok4server-via-nginx)
-    - [Installer et configurer NGINX](#installer-et-configurer-nginx)
-    - [Configurer et lancer ROK4SERVER en mode statique](#configurer-et-lancer-rok4server-en-mode-statique)
+  - [Installer et configurer NGINX](#installer-et-configurer-nginx)
+  - [Configurer et lancer ROK4SERVER en mode statique](#configurer-et-lancer-rok4server-en-mode-statique)
 - [Utiliser ROK4SERVER via APACHE](#utiliser-rok4server-via-apache)
-    - [Installer et configurer APACHE](#installer-et-configurer-apache)
-        - [Mise en oeuvre avec mod_fcgid](#mise-en-oeuvre-avec-mod_fcgid)
-        - [Mise en oeuvre avec mod_fastcgi](#mise-en-oeuvre-avec-mod_fastcgi)
+  - [Installer et configurer APACHE](#installer-et-configurer-apache)
+    - [Mise en oeuvre avec mod_fcgid](#mise-en-oeuvre-avec-mod_fcgid)
+    - [Mise en oeuvre avec mod_fastcgi](#mise-en-oeuvre-avec-mod_fastcgi)
 - [Accès aux capacités du serveur](#accès-aux-capacités-du-serveur)
 - [Fonctionnement général de ROK4SERVER](#fonctionnement-général-de-rok4server)
-    - [Identification du service et du type de requête](#identification-du-service-et-du-type-de-requête)
-    - [Accès aux données](#accès-aux-données)
+  - [Identification du service et du type de requête](#identification-du-service-et-du-type-de-requête)
+  - [Accès aux données](#accès-aux-données)
 
 <!-- TOC END -->
 
@@ -148,6 +148,7 @@ Lorsque le serveur reçoit une requête, si c'est une requête POST, le corps es
 Ensuite le service et le type de requête sont identifiés. Une requête sans paramètre sera considérée comme une requête TMS. Sinon le paramètre SERVICE est cherché et les valeurs gérées sont WMS et WMTS (le serveur est insensible à la casse).
 
 Pour une requête TMS, la version "1.0.0" est cherchée dans le contexte :
+
 * Si elle n'est pas trouvée, on retourne la liste des getCapabilities disponibles sur le serveur (getServices TMS)
 * Si elle est trouvée, on regarde la profondeur du contexte à partir de cette version :
     - pas de profondeur supplémentaire (`.../1.0.0/`) : on demande les capacités pour le service TMS (getCapabilities TMS)
@@ -156,6 +157,7 @@ Pour une requête TMS, la version "1.0.0" est cherchée dans le contexte :
     - quatre profondeurs supplémentaires (`.../1.0.0/<chaîne>/<z>/<x>/<y>.<ext>`) : on demande une tuile de la couche, si elle existe (getTile TMS). L'extension doit être en accord avec le format de la couche (jpg, png, pbf...)
 
 Pour une requête WMTS ou WMS, le type de requête est défini par le paramètre REQUEST et les valeurs gérées sont :
+
 * en WMS :
     - GetCapabilities
     - GetMap

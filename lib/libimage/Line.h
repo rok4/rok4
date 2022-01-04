@@ -48,7 +48,7 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <Logger.h>
+#include <boost/log/trivial.hpp>
 #include <Utils.h>
 
 /** \~ \author Institut national de l'information géographique et forestière
@@ -128,7 +128,7 @@ public:
     Line ( int width, int samplesize ) : width ( width ) {
         if (samplesize == 1) coeff = 255.; //cas uint8_t
         else if (samplesize == 4) coeff = 1.; //cas float
-        else LOGGER_ERROR("Sample size is unknown for the line");
+        else BOOST_LOG_TRIVIAL(error) << "Sample size is unknown for the line";
         
         samples = new float[3*width];
         alpha = new float[width];

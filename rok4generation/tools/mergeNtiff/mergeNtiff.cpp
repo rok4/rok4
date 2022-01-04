@@ -63,7 +63,13 @@
 #include <string>
 #include <fstream>
 #include "tiffio.h"
-#include "Logger.h"
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/utility/setup/console.hpp>
+namespace logging = boost::log;
+namespace keywords = boost::log::keywords;
 
 #include "FileImage.h"
 #include "ResampledImage.h"
@@ -126,7 +132,8 @@ std::string help = std::string("\nmergeNtiff version ") + std::string(ROK4_VERSI
     "    -c output compression :\n"
     "            raw     no compression\n"
     "            none    no compression\n"
-    "            jpg     Jpeg encoding\n"
+    "            jpg     Jpeg encoding (quality 75)\n"
+    "            jpg90   Jpeg encoding (quality 90)\n"
     "            lzw     Lempel-Ziv & Welch encoding\n"
     "            pkb     PackBits encoding\n"
     "            zip     Deflate encoding\n"
@@ -157,7 +164,7 @@ std::string help = std::string("\nmergeNtiff version ") + std::string(ROK4_VERSI
  * \details L'affichage se fait dans le niveau de logger INFO
  */
 void usage() {
-    LOGGER_INFO (help);
+    BOOST_LOG_TRIVIAL(info) << help;
 }
 
 /**
@@ -167,8 +174,8 @@ void usage() {
  * \param[in] errorCode code de retour
  */
 void error ( std::string message, int errorCode ) {
-    LOGGER_ERROR ( message );
-    LOGGER_ERROR ( "Configuration file : " << imageListFilename );
+    BOOST_LOG_TRIVIAL(error) <<  message ;
+    BOOST_LOG_TRIVIAL(error) <<  "Configuration file : " << imageListFilename ;
     usage();
     sleep ( 1 );
     exit ( errorCode );
@@ -194,21 +201,21 @@ int parseCommandLine ( int argc, char** argv ) {
                 break;
             case 'f': // fichier de liste des images source
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error in option -f" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error in option -f" ;
                     return -1;
                 }
                 strcpy ( imageListFilename,argv[i] );
                 break;
             case 'r': // racine pour le fichier de configuration
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error in option -r" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error in option -r" ;
                     return -1;
                 }
                 strcpy ( outImagesRoot,argv[i] );
                 break;
             case 'i': // interpolation
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error in option -i" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error in option -i" ;
                     return -1;
                 }
                 if ( strncmp ( argv[i], "lanczos",7 ) == 0 ) interpolation = Interpolation::LANCZOS_3;
@@ -216,20 +223,20 @@ int parseCommandLine ( int argc, char** argv ) {
                 else if ( strncmp ( argv[i], "bicubic",7 ) == 0 ) interpolation = Interpolation::CUBIC;
                 else if ( strncmp ( argv[i], "linear",6 ) == 0 ) interpolation = Interpolation::LINEAR;
                 else {
-                    LOGGER_ERROR ( "Unknown value for option -i : " << argv[i] );
+                    BOOST_LOG_TRIVIAL(error) <<  "Unknown value for option -i : " << argv[i] ;
                     return -1;
                 }
                 break;
             case 'n': // nodata
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error in option -n" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error in option -n" ;
                     return -1;
                 }
                 strcpy ( strnodata,argv[i] );
                 break;
             case 'c': // compression
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error in option -c" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error in option -c" ;
                     return -1;
                 }
                 if ( strncmp ( argv[i], "raw",3 ) == 0 ) compression = Compression::NONE;
@@ -237,9 +244,10 @@ int parseCommandLine ( int argc, char** argv ) {
                 else if ( strncmp ( argv[i], "zip",3 ) == 0 ) compression = Compression::DEFLATE;
                 else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) compression = Compression::PACKBITS;
                 else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) compression = Compression::JPEG;
+                else if ( strncmp ( argv[i], "jpg90",3 ) == 0 ) compression = Compression::JPEG90;
                 else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) compression = Compression::LZW;
                 else {
-                    LOGGER_ERROR ( "Unknown value for option -c : " << argv[i] );
+                    BOOST_LOG_TRIVIAL(error) <<  "Unknown value for option -c : " << argv[i] ;
                     return -1;
                 }
                 break;
@@ -247,7 +255,7 @@ int parseCommandLine ( int argc, char** argv ) {
             /****************** OPTIONNEL, POUR FORCER DES CONVERSIONS **********************/
             case 's': // samplesperpixel
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error in option -s" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error in option -s" ;
                     return -1;
                 }
                 if ( strncmp ( argv[i], "1",1 ) == 0 ) samplesperpixel = 1 ;
@@ -255,44 +263,44 @@ int parseCommandLine ( int argc, char** argv ) {
                 else if ( strncmp ( argv[i], "3",1 ) == 0 ) samplesperpixel = 3 ;
                 else if ( strncmp ( argv[i], "4",1 ) == 0 ) samplesperpixel = 4 ;
                 else {
-                    LOGGER_ERROR ( "Unknown value for option -s : " << argv[i] );
+                    BOOST_LOG_TRIVIAL(error) <<  "Unknown value for option -s : " << argv[i] ;
                     return -1;
                 }
                 break;
             case 'b': // bitspersample
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error in option -b" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error in option -b" ;
                     return -1;
                 }
                 if ( strncmp ( argv[i], "8",1 ) == 0 ) bitspersample = 8 ;
                 else if ( strncmp ( argv[i], "32",2 ) == 0 ) bitspersample = 32 ;
                 else {
-                    LOGGER_ERROR ( "Unknown value for option -b : " << argv[i] );
+                    BOOST_LOG_TRIVIAL(error) <<  "Unknown value for option -b : " << argv[i] ;
                     return -1;
                 }
                 break;
             case 'a': // sampleformat
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error in option -a" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error in option -a" ;
                     return -1;
                 }
                 if ( strncmp ( argv[i],"uint",4 ) == 0 ) sampleformat = SampleFormat::UINT ;
                 else if ( strncmp ( argv[i],"float",5 ) == 0 ) sampleformat = SampleFormat::FLOAT;
                 else {
-                    LOGGER_ERROR ( "Unknown value for option -a : " << argv[i] );
+                    BOOST_LOG_TRIVIAL(error) <<  "Unknown value for option -a : " << argv[i] ;
                     return -1;
                 }
                 break;
             /*******************************************************************************/
 
             default:
-                LOGGER_ERROR ( "Unknown option : -" << argv[i][1] );
+                BOOST_LOG_TRIVIAL(error) <<  "Unknown option : -" << argv[i][1] ;
                 return -1;
             }
         }
     }
 
-    LOGGER_DEBUG ( "mergeNtiff -f " << imageListFilename );
+    BOOST_LOG_TRIVIAL(debug) <<  "mergeNtiff -f " << imageListFilename ;
 
     return 0;
 }
@@ -326,7 +334,7 @@ bool loadConfiguration (
 
     file.open ( imageListFilename );
     if ( ! file.is_open() ) {
-        LOGGER_ERROR ( "Impossible d'ouvrir le fichier " << imageListFilename );
+        BOOST_LOG_TRIVIAL(error) <<  "Impossible d'ouvrir le fichier " << imageListFilename ;
         return false;
     }
 
@@ -360,14 +368,14 @@ bool loadConfiguration (
 
             if (masks->size() == 0 || masks->back()) {
                 // La première ligne ne peut être un masque et on ne peut pas avoir deux masques à la suite
-                LOGGER_ERROR ( "A MSK line have to follow an IMG line" );
-                LOGGER_ERROR ( "\t line : " << line );   
+                BOOST_LOG_TRIVIAL(error) <<  "A MSK line have to follow an IMG line" ;
+                BOOST_LOG_TRIVIAL(error) <<  "\t line : " << line ;   
                 return false;             
             }
         }
         else {
-            LOGGER_ERROR ( "We have to read 9 values for IMG or 2 for MSK" );
-            LOGGER_ERROR ( "\t line : " << line );
+            BOOST_LOG_TRIVIAL(error) <<  "We have to read 9 values for IMG or 2 for MSK" ;
+            BOOST_LOG_TRIVIAL(error) <<  "\t line : " << line ;
             return false;
         }
 
@@ -392,11 +400,11 @@ bool loadConfiguration (
     }
 
     if (file.eof()) {
-        LOGGER_DEBUG("Fin du fichier de configuration atteinte");
+        BOOST_LOG_TRIVIAL(debug) << "Fin du fichier de configuration atteinte";
         file.close();
         return true;
     } else {
-        LOGGER_ERROR("Failure reading the configuration file " << imageListFilename);
+        BOOST_LOG_TRIVIAL(error) << "Failure reading the configuration file " << imageListFilename;
         file.close();
         return false;
     }
@@ -424,13 +432,13 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
     std::vector<double> resys;
 
     if (! loadConfiguration(&masks, &paths, &srss, &bboxes, &resxs, &resys) ) {
-        LOGGER_ERROR ( "Cannot load configuration file " << imageListFilename );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot load configuration file " << imageListFilename ;
         return -1;
     }
 
     // On doit avoir au moins deux lignes, trois si on a un masque de sortie
     if (masks.size() < 2 || (masks.size() == 2 && masks.back()) ) {
-        LOGGER_ERROR ( "We have no input images in configuration file " << imageListFilename );
+        BOOST_LOG_TRIVIAL(error) <<  "We have no input images in configuration file " << imageListFilename ;
         return -1;
     }
 
@@ -449,10 +457,10 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
     for ( int i = firstInput; i < masks.size(); i++ ) {
 
         nbImgsIn++;
-        LOGGER_DEBUG("Input " << nbImgsIn);
+        BOOST_LOG_TRIVIAL(debug) << "Input " << nbImgsIn;
 
         if ( resxs.at(i) == 0. || resys.at(i) == 0.) {
-            LOGGER_ERROR ( "Source image " << nbImgsIn << " is not valid (resolutions)" );
+            BOOST_LOG_TRIVIAL(error) <<  "Source image " << nbImgsIn << " is not valid (resolutions)" ;
             return -1;
         }
 
@@ -460,32 +468,32 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         crs.setRequestCode ( srss.at(i) );
 
         if ( ! crs.validateBBox ( bboxes.at(i) ) ) {
-            LOGGER_DEBUG("Warning : the input image's (" << paths.at(i) << ") bbox (" << bboxes.at(i).toString() << ") is not included in the srs (" << srss.at(i) << ") definition extent");
+            BOOST_LOG_TRIVIAL(debug) << "Warning : the input image's (" << paths.at(i) << ") bbox (" << bboxes.at(i).toString() << ") is not included in the srs (" << srss.at(i) << ") definition extent";
         }
 
         FileImage* pImage=factory.createImageToRead ( paths.at(i), bboxes.at(i), resxs.at(i), resys.at(i) );
         if ( pImage == NULL ) {
-            LOGGER_ERROR ( "Impossible de creer une image a partir de " << paths.at(i) );
+            BOOST_LOG_TRIVIAL(error) <<  "Impossible de creer une image a partir de " << paths.at(i) ;
             return -1;
         }
         pImage->setCRS ( crs );
-        delete paths.at(i);
-        
+        free(paths.at(i));
+
         if ( i+1 < masks.size() && masks.at(i+1) ) {
             
             FileImage* pMask=factory.createImageToRead ( paths.at(i+1), bboxes.at(i), resxs.at(i), resys.at(i) );
             if ( pMask == NULL ) {
-                LOGGER_ERROR ( "Impossible de creer un masque a partir de " << paths.at(i) );
+                BOOST_LOG_TRIVIAL(error) <<  "Impossible de creer un masque a partir de " << paths.at(i) ;
                 return -1;
             }
             pMask->setCRS ( crs );
 
             if ( ! pImage->setMask ( pMask ) ) {
-                LOGGER_ERROR ( "Cannot add mask to the input FileImage" );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot add mask to the input FileImage" ;
                 return -1;
             }
             i++;
-            delete paths.at(i);
+            free(paths.at(i));
         }
 
         pImageIn->push_back ( pImage );
@@ -508,28 +516,28 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         } else if (! outputProvided) {
             // On doit avoir le même format pour tout le monde
             if (bitspersample != pImage->getBitsPerSample()) {
-                LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
-                LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same number of bits per sample" );
-                LOGGER_ERROR(bitspersample << " != " << pImage->getBitsPerSample() );
+                BOOST_LOG_TRIVIAL(error) << "We don't provided output format, so all inputs have to own the same" ;
+                BOOST_LOG_TRIVIAL(error) << "The first image and the " << nbImgsIn << " one don't have the same number of bits per sample" ;
+                BOOST_LOG_TRIVIAL(error) << bitspersample << " != " << pImage->getBitsPerSample() ;
             }
             if (samplesperpixel != pImage->getChannels()) {
-                LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
-                LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same number of samples per pixel" );
-                LOGGER_ERROR(samplesperpixel << " != " << pImage->getChannels() );
+                BOOST_LOG_TRIVIAL(error) << "We don't provided output format, so all inputs have to own the same" ;
+                BOOST_LOG_TRIVIAL(error) << "The first image and the " << nbImgsIn << " one don't have the same number of samples per pixel" ;
+                BOOST_LOG_TRIVIAL(error) << samplesperpixel << " != " << pImage->getChannels() ;
             }
             if (sampleformat != pImage->getSampleFormat()) {
-                LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
-                LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same sample format" );
-                LOGGER_ERROR(sampleformat << " != " << pImage->getSampleFormat() );
+                BOOST_LOG_TRIVIAL(error) << "We don't provided output format, so all inputs have to own the same" ;
+                BOOST_LOG_TRIVIAL(error) << "The first image and the " << nbImgsIn << " one don't have the same sample format" ;
+                BOOST_LOG_TRIVIAL(error) << sampleformat << " != " << pImage->getSampleFormat() ;
             }
         }
     }
 
     if ( pImageIn->size() == 0 ) {
-        LOGGER_ERROR ( "Erreur lecture du fichier de parametres '" << imageListFilename << "' : pas de données en entrée." );
+        BOOST_LOG_TRIVIAL(error) <<  "Erreur lecture du fichier de parametres '" << imageListFilename << "' : pas de données en entrée." ;
         return -1;
     } else {
-        LOGGER_DEBUG( nbImgsIn << " image(s) en entrée" );
+        BOOST_LOG_TRIVIAL(debug) <<  nbImgsIn << " image(s) en entrée" ;
     }
 
     /********************** LA SORTIE : CRÉATION *************************/
@@ -554,12 +562,12 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
     );
 
     if ( *ppImageOut == NULL ) {
-        LOGGER_ERROR ( "Impossible de creer l'image " << paths.at(0) );
+        BOOST_LOG_TRIVIAL(error) <<  "Impossible de creer l'image " << paths.at(0) ;
         return -1;
     }
 
     ( *ppImageOut )->setCRS ( outCrs );
-    delete paths.at(0);
+    free(paths.at(0));
 
     if ( firstInput == 2 ) {
 
@@ -569,12 +577,12 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         );
 
         if ( *ppMaskOut == NULL ) {
-            LOGGER_ERROR ( "Impossible de creer le masque " << paths.at(1) );
+            BOOST_LOG_TRIVIAL(error) <<  "Impossible de creer le masque " << paths.at(1) ;
             return -1;
         }
 
         ( *ppMaskOut )->setCRS ( outCrs );
-        delete paths.at(1);
+        free(paths.at(1));
     }
 
     if (debugLogger) ( *ppImageOut )->print();
@@ -593,7 +601,7 @@ int addConverters(std::vector<FileImage*> ImageIn) {
     for ( std::vector<FileImage*>::iterator itImg = ImageIn.begin(); itImg < ImageIn.end(); itImg++ ) {
 
         if ( ! ( *itImg )->addConverter ( sampleformat, bitspersample, samplesperpixel ) ) {
-            LOGGER_ERROR("Cannot add converter for an input image");
+            BOOST_LOG_TRIVIAL(error) << "Cannot add converter for an input image";
             ( *itImg )->print();
             return -1;
         }
@@ -666,7 +674,7 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
     double phaseX = pImage->getPhaseX();
     double phaseY = pImage->getPhaseY();
 
-    LOGGER_DEBUG ( "\t Bbox avant rephasage : " << bbox->toString() );
+    BOOST_LOG_TRIVIAL(debug) <<  "\t Bbox avant rephasage : " << bbox->toString() ;
 
     // Mise en phase de xmin (sans que celui ci puisse être plus petit)
     phi = modf ( bbox->xmin/resx_dst, &intpart );
@@ -724,7 +732,7 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
         bbox->ymax += phaseDiff*resy_dst;
     }
 
-    LOGGER_DEBUG ( "\t Bbox après rephasage : " << bbox->toString() );
+    BOOST_LOG_TRIVIAL(debug) <<  "\t Bbox après rephasage : " << bbox->toString() ;
 }
 
 /**
@@ -749,14 +757,14 @@ bool resampleImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Resampl
 
     int mirrorSize = std::max ( mirrorSizeX, mirrorSizeY );
 
-    LOGGER_DEBUG("\t Mirror's size : " << mirrorSize);
+    BOOST_LOG_TRIVIAL(debug) << "\t Mirror's size : " << mirrorSize;
 
 
     // On mémorise la bbox d'origine, sans les miroirs
     BoundingBox<double> realBbox = pECI->getBbox();
 
     if ( ! pECI->addMirrors ( mirrorSize ) ) {
-        LOGGER_ERROR ( "Unable to add mirrors" );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to add mirrors" ;
         return false;
     }
 
@@ -781,7 +789,7 @@ bool resampleImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Resampl
     int height_dst = int ( ( bbox_dst.ymax-bbox_dst.ymin ) / resy_dst + 0.5 );
 
     if ( width_dst <= 0 || height_dst <= 0 ) {
-        LOGGER_WARN ( "A ResampledImage's dimension would have been null" );
+        BOOST_LOG_TRIVIAL(warning) <<  "A ResampledImage's dimension would have been null" ;
         return true;
     }
 
@@ -795,7 +803,7 @@ bool resampleImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Resampl
     
 
     if ( ! ( *ppRImage )->setMask ( pRMask ) ) {
-        LOGGER_ERROR ( "Cannot add mask to the ResampledImage" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot add mask to the ResampledImage" ;
         return false;
     }
 
@@ -842,7 +850,7 @@ bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Reproj
     int cropHeight = ceil((cropSourceBbox.ymax - cropSourceBbox.ymin) / resy_src);
 
     if ( cropSourceBbox.reproject(from_srs, to_srs) ) {
-        LOGGER_ERROR ( "Erreur reprojection bbox src -> dst" );
+        BOOST_LOG_TRIVIAL(error) <<  "Erreur reprojection bbox src -> dst" ;
         return false;
     }
 
@@ -865,7 +873,7 @@ bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Reproj
 
     BoundingBox<double> BBOX_dst ( xmin_dst,ymin_dst,xmax_dst,ymax_dst );
 
-    LOGGER_DEBUG ( "        BBOX dst (srs destination) : " << BBOX_dst.toString() );
+    BOOST_LOG_TRIVIAL(debug) <<  "        BBOX dst (srs destination) : " << BBOX_dst.toString() ;
 
     /* Nous avons maintenant les limites de l'image reprojetée. N'oublions pas que celle ci doit être compatible
      * avec l'image de sortie. Il faut donc modifier la bounding box afin qu'elle remplisse les conditions de compatibilité
@@ -874,25 +882,25 @@ bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Reproj
     makePhase ( pImageOut, &BBOX_dst );
 
     // Dimension de l'image reechantillonnee
-    LOGGER_DEBUG ( "        Calculated destination width (float) : " << ( BBOX_dst.xmax - BBOX_dst.xmin ) / resx_dst );
-    LOGGER_DEBUG ( "        Calculated destination height (float) : " << ( BBOX_dst.ymax - BBOX_dst.ymin ) / resy_dst );
+    BOOST_LOG_TRIVIAL(debug) <<  "        Calculated destination width (float) : " << ( BBOX_dst.xmax - BBOX_dst.xmin ) / resx_dst ;
+    BOOST_LOG_TRIVIAL(debug) <<  "        Calculated destination height (float) : " << ( BBOX_dst.ymax - BBOX_dst.ymin ) / resy_dst ;
     int width_dst = int ( ( BBOX_dst.xmax - BBOX_dst.xmin ) / resx_dst + 0.5 );
     int height_dst = int ( ( BBOX_dst.ymax - BBOX_dst.ymin ) / resy_dst + 0.5 );
 
     if ( width_dst <= 0 || height_dst <= 0 ) {
-        LOGGER_WARN ( "A ReprojectedImage's dimension would have been null" );
+        BOOST_LOG_TRIVIAL(warning) <<  "A ReprojectedImage's dimension would have been null" ;
         return true;
     }
 
     tmpBbox = BBOX_dst;
 
     if ( tmpBbox.reproject ( to_srs, from_srs ) ) {
-        LOGGER_ERROR ( "Erreur reprojection bbox dst en srs src" );
+        BOOST_LOG_TRIVIAL(error) <<  "Erreur reprojection bbox dst en srs src" ;
         return false;
     }
 
-    LOGGER_DEBUG ( "        BBOX dst (srs source) : " << tmpBbox.toString() );
-    LOGGER_DEBUG ( "        BBOX source : " << pECI->getBbox().toString() );
+    BOOST_LOG_TRIVIAL(debug) <<  "        BBOX dst (srs source) : " << tmpBbox.toString() ;
+    BOOST_LOG_TRIVIAL(debug) <<  "        BBOX source : " << pECI->getBbox().toString() ;
     
 
     /************************ Ajout des miroirs *************************/
@@ -906,14 +914,14 @@ bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Reproj
 
     int mirrorSize = 2 * std::max ( mirrorSizeX, mirrorSizeY );
 
-    LOGGER_DEBUG ( "        Mirror's size : " << mirrorSize );
+    BOOST_LOG_TRIVIAL(debug) <<  "        Mirror's size : " << mirrorSize ;
 
     if ( ! pECI->addMirrors ( mirrorSize ) ) {
-        LOGGER_ERROR ( "Unable to add mirrors" );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to add mirrors" ;
         return false;
     }
 
-    LOGGER_DEBUG ( "        BBOX source avec miroir : " << pECI->getBbox().toString() );
+    BOOST_LOG_TRIVIAL(debug) <<  "        BBOX source avec miroir : " << pECI->getBbox().toString() ;
 
     /********************** Image source agrandie ***********************/
 
@@ -921,17 +929,17 @@ bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Reproj
      * ReprojectedImage va vouloir accéder à des coordonnées pixel négatives -> segmentation fault.
      * Pour éviter cela, on va agrandir artificiellemnt l'étendue de l'image source (avec du nodata) */
     if ( ! pECI->extendBbox ( tmpBbox, mirrorSize ) ) {
-        LOGGER_ERROR ( "Unable to extend the source image extent for the reprojection" );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to extend the source image extent for the reprojection" ;
         return false;
     }
-    LOGGER_DEBUG ( "        BBOX source agrandie : " << pECI->getBbox().toString() );
+    BOOST_LOG_TRIVIAL(debug) <<  "        BBOX source agrandie : " << pECI->getBbox().toString() ;
 
     /********************** Grille de reprojection **********************/
 
     Grid* grid = new Grid ( width_dst, height_dst, BBOX_dst );
 
     if ( ! ( grid->reproject ( to_srs, from_srs ) ) ) {
-        LOGGER_ERROR ( "Bbox image invalide" );
+        BOOST_LOG_TRIVIAL(error) <<  "Bbox image invalide" ;
         return false;
     }
 
@@ -950,7 +958,7 @@ bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Reproj
     (*ppRImage)->setCRS(pImageOut->getCRS());
 
     if ( ! ( *ppRImage )->setMask ( pRMask ) ) {
-        LOGGER_ERROR ( "Cannot add mask to the ReprojectedImage" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot add mask to the ReprojectedImage" ;
         return false;
     }
 
@@ -988,14 +996,14 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
     std::vector<Image*> pOverlayedImages;
 
     for ( unsigned int i=0; i<TabImageIn.size(); i++ ) {
-        LOGGER_DEBUG ( "Pack " << i << " : " << TabImageIn.at ( i ).size() << " image(s)" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Pack " << i << " : " << TabImageIn.at ( i ).size() << " image(s)" ;
         // Mise en superposition du paquet d'images en 2 etapes
 
         // Etape 1 : Creation d'une image composite (avec potentiellement une seule image)
 
         ExtendedCompoundImage* pECI = ECIF.createExtendedCompoundImage ( TabImageIn.at ( i ),nodata,0 );
         if ( pECI == NULL ) {
-            LOGGER_ERROR ( "Impossible d'assembler les images" );
+            BOOST_LOG_TRIVIAL(error) <<  "Impossible d'assembler les images" ;
             return -1;
         }
         pECI->setCRS ( TabImageIn.at ( i ).at ( 0 )->getCRS() );
@@ -1003,46 +1011,46 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
         ExtendedCompoundMask* pECMI = new ExtendedCompoundMask ( pECI );
         pECMI->setCRS ( TabImageIn.at ( i ).at ( 0 )->getCRS() );
         if ( ! pECI->setMask ( pECMI ) ) {
-            LOGGER_ERROR ( "Cannot add mask to the Image's pack " << i );
+            BOOST_LOG_TRIVIAL(error) <<  "Cannot add mask to the Image's pack " << i ;
             return -1;
         }
 
         if ( pImageOut->isCompatibleWith ( pECI ) ) {
-            LOGGER_DEBUG ( "\t is compatible" );
+            BOOST_LOG_TRIVIAL(debug) <<  "\t is compatible" ;
             /* les images sources et finale ont la meme resolution et la meme phase
              * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImages.push_back ( pECI );
 
         } else if ( pECI->getCRS() == pImageOut->getCRS() ) {
 
-            LOGGER_DEBUG ( "\t need a resampling" );
+            BOOST_LOG_TRIVIAL(debug) <<  "\t need a resampling" ;
 
             ResampledImage* pResampledImage = NULL;
 
             if ( ! resampleImages ( pImageOut, pECI, &pResampledImage ) ) {
-                LOGGER_ERROR ( "Cannot resample images' pack" );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot resample images' pack" ;
                 return -1;
             }
 
             if ( pResampledImage == NULL ) {
-                LOGGER_WARN ( "No resampled image to add" );
+                BOOST_LOG_TRIVIAL(warning) <<  "No resampled image to add" ;
             } else {
                 pOverlayedImages.push_back ( pResampledImage );
             }
 
         } else {
 
-            LOGGER_DEBUG ( "\t need a reprojection" );
+            BOOST_LOG_TRIVIAL(debug) <<  "\t need a reprojection" ;
 
             ReprojectedImage* pReprojectedImage = NULL;
 
             if ( ! reprojectImages ( pImageOut, pECI, &pReprojectedImage ) ) {
-                LOGGER_ERROR ( "Cannot reproject images' pack" );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot reproject images' pack" ;
                 return -1;
             }
 
             if ( pReprojectedImage == NULL ) {
-                LOGGER_WARN ( "No reprojected image to add" );
+                BOOST_LOG_TRIVIAL(warning) <<  "No reprojected image to add" ;
             } else {
                 pOverlayedImages.push_back ( pReprojectedImage );
             }
@@ -1056,7 +1064,8 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
                     pOverlayedImages, nodata,0 );
 
     if ( *ppECIout == NULL ) {
-        LOGGER_ERROR ( "Cannot create final compounded image." );
+        for (int i = 0; i < pOverlayedImages.size(); i++) delete pOverlayedImages.at(i);
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot create final compounded image." ;
         return -1;
     }
 
@@ -1064,7 +1073,7 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
     ExtendedCompoundMask* pECMIout = new ExtendedCompoundMask ( *ppECIout );
 
     if ( ! ( *ppECIout )->setMask ( pECMIout ) ) {
-        LOGGER_ERROR ( "Cannot add mask to the main Extended Compound Image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot add mask to the main Extended Compound Image" ;
         return -1;
     }
 
@@ -1085,25 +1094,20 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
  */
 int main ( int argc, char **argv ) {
 
-    FileImage* pImageOut ;
+    FileImage* pImageOut = NULL;
     FileImage* pMaskOut = NULL;
     std::vector<FileImage*> ImageIn;
     std::vector<std::vector<Image*> > TabImageIn;
-    ExtendedCompoundImage* pECI;
+    ExtendedCompoundImage* pECI = NULL;
 
     /* Initialisation des Loggers */
-    Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
-
-    Accumulator* acc = new StreamAccumulator();
-
-    Logger::setAccumulator ( INFO , acc );
-    Logger::setAccumulator ( WARN , acc );
-    Logger::setAccumulator ( ERROR, acc );
-    Logger::setAccumulator ( FATAL, acc );
-
-    std::ostream &logw = LOGGER ( WARN );
-    logw.precision ( 16 );
-    logw.setf ( std::ios::fixed,std::ios::floatfield );
+    boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::info );
+    logging::add_common_attributes();
+    boost::log::register_simple_formatter_factory< boost::log::trivial::severity_level, char >("Severity");
+    logging::add_console_log (
+        std::cout,
+        keywords::format = "%Severity%\t%Message%"
+    );
 
     // Lecture des parametres de la ligne de commande
     if ( parseCommandLine ( argc, argv ) < 0 ) {
@@ -1112,10 +1116,7 @@ int main ( int argc, char **argv ) {
 
     // On sait maintenant si on doit activer le niveau de log DEBUG
     if (debugLogger) {
-        Logger::setAccumulator(DEBUG, acc);
-        std::ostream &logd = LOGGER ( DEBUG );
-        logd.precision ( 16 );
-        logd.setf ( std::ios::fixed,std::ios::floatfield );
+        boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::debug );
     }
 
     // On regarde si on a tout précisé en sortie, pour voir si des conversions sont possibles
@@ -1123,70 +1124,89 @@ int main ( int argc, char **argv ) {
       outputProvided = true;
     }
 
-    LOGGER_DEBUG ( "Load" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Load" ;
     // Chargement des images
     if ( loadImages ( &pImageOut,&pMaskOut,&ImageIn ) < 0 ) {
+        if (pECI) delete pECI;
+        if (pImageOut) delete pImageOut;
+        if (pMaskOut) delete pMaskOut;
         error ( "Echec chargement des images",-1 );
     }
 
-    LOGGER_DEBUG ( "Add converters" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Add converters" ;
     // Ajout des modules de conversion aux images en entrée
     if ( addConverters ( ImageIn ) < 0 ) {
+        if (pECI) delete pECI;
+        if (pImageOut) delete pImageOut;
+        if (pMaskOut) delete pMaskOut;
         error ( "Echec ajout des convertisseurs", -1 );
     }
 
     // Maintenant que l'on a la valeur de samplesperpixel, on peut lire le nodata
     // Conversion string->int[] du paramètre nodata
-    LOGGER_DEBUG ( "Nodata interpretation" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Nodata interpretation" ;
     int nodata[samplesperpixel];
 
     char* charValue = strtok ( strnodata,"," );
     if ( charValue == NULL ) {
+        if (pECI) delete pECI;
+        if (pImageOut) delete pImageOut;
+        if (pMaskOut) delete pMaskOut;
         error ( "Error with option -n : a value for nodata is missing",-1 );
     }
     nodata[0] = atoi ( charValue );
     for ( int i = 1; i < samplesperpixel; i++ ) {
         charValue = strtok ( NULL, "," );
         if ( charValue == NULL ) {
+            if (pECI) delete pECI;
+            if (pImageOut) delete pImageOut;
+            if (pMaskOut) delete pMaskOut;
             error ( "Error with option -n : one value per sample, separate with comma",-1 );
         }
         nodata[i] = atoi ( charValue );
     }
 
-    LOGGER_DEBUG ( "Sort" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Sort" ;
     // Tri des images
     if ( sortImages ( ImageIn, &TabImageIn ) < 0 ) {
+        if (pECI) delete pECI;
+        if (pImageOut) delete pImageOut;
+        if (pMaskOut) delete pMaskOut;
         error ( "Echec tri des images",-1 );
     }
 
-    LOGGER_DEBUG ( "Merge" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Merge" ;
     // Fusion des paquets d images
     if ( mergeTabImages ( pImageOut, TabImageIn, &pECI, nodata ) < 0 ) {
+        if (pECI) delete pECI;
+        if (pImageOut) delete pImageOut;
+        if (pMaskOut) delete pMaskOut;
         error ( "Echec fusion des paquets d images",-1 );
     }
 
-    LOGGER_DEBUG ( "Save image" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Save image" ;
     // Enregistrement de l'image fusionnée
     if ( pImageOut->writeImage ( pECI ) < 0 ) {
+        if (pECI) delete pECI;
+        if (pImageOut) delete pImageOut;
+        if (pMaskOut) delete pMaskOut;
         error ( "Echec enregistrement de l image finale",-1 );
     }
 
     if ( pMaskOut != NULL ) {
-        LOGGER_DEBUG ( "Save mask" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Save mask" ;
         // Enregistrement du masque fusionné, si demandé
         if ( pMaskOut->writeImage ( pECI->Image::getMask() ) < 0 ) {
+            if (pECI) delete pECI;
+            if (pImageOut) delete pImageOut;
+            if (pMaskOut) delete pMaskOut;
             error ( "Echec enregistrement du masque final",-1 );
         }
     }
 
-    LOGGER_DEBUG ( "Clean" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Clean" ;
     // Nettoyage
     pj_clear_initcache();
-    // Suppression du nettoyage du logger jusqu'à sa refonte
-    // Logger::stopLogger();
-    // if ( acc ) {
-    //     delete acc;
-    // }
     delete pECI;
     delete pImageOut;
     delete pMaskOut;

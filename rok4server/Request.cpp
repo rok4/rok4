@@ -54,7 +54,6 @@
 #include "tinyxml.h"
 #include "config.h"
 #include <algorithm>
-#include "intl.h"
 
 
 namespace RequestType {
@@ -66,6 +65,7 @@ namespace RequestType {
         "GetCapabilities",
         "GetLayer",
         "GetLayerMetadata",
+        "GetLayerGdal",
         "GetMap",
         "GetTile",
         "GetFeatureInfo",
@@ -181,7 +181,7 @@ void removeNameSpace ( std::string& elementName ) {
  * \param[in,out] parameters associative parameters list
  */
 void parseGetCapabilitiesPost ( TiXmlHandle& hGetCap, std::map< std::string, std::string >& parameters ) {
-    LOGGER_DEBUG ( _ ( "Parse GetCapabilities Request" ) );
+    BOOST_LOG_TRIVIAL(debug) <<   "Parse GetCapabilities Request" ;
     std::string version;
     std::string service;
 
@@ -190,7 +190,7 @@ void parseGetCapabilitiesPost ( TiXmlHandle& hGetCap, std::map< std::string, std
     TiXmlElement* pElem = hGetCap.ToElement();
 
     if ( pElem->QueryStringAttribute ( "service",&service ) != TIXML_SUCCESS ) {
-        LOGGER_DEBUG ( _ ( "No service attribute" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No service attribute" ;
         return;
     }
 
@@ -199,7 +199,7 @@ void parseGetCapabilitiesPost ( TiXmlHandle& hGetCap, std::map< std::string, std
     parameters.insert ( std::pair<std::string, std::string> ( "service", service ) );
 
     if ( pElem->QueryStringAttribute ( "version",&version ) != TIXML_SUCCESS ) {
-        LOGGER_DEBUG ( _ ( "No version attribute" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No version attribute" ;
         return;
     }
     parameters.insert ( std::pair<std::string, std::string> ( "version", version ) );
@@ -216,7 +216,7 @@ void parseGetCapabilitiesPost ( TiXmlHandle& hGetCap, std::map< std::string, std
  * \param[in,out] parameters associative parameters list
  */
 void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::string >& parameters ) {
-    LOGGER_DEBUG ( _ ( "Parse GetTile Request" ) );
+    BOOST_LOG_TRIVIAL(debug) <<   "Parse GetTile Request" ;
     TiXmlElement* pElem = hGetTile.ToElement();
     std::string version;
     std::string service;
@@ -224,14 +224,14 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
     parameters.insert ( std::pair<std::string, std::string> ( "request", "gettile" ) );
 
     if ( pElem->QueryStringAttribute ( "service",&service ) != TIXML_SUCCESS ) {
-        LOGGER_DEBUG ( _ ( "No service attribute" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No service attribute" ;
         return;
     }
     std::transform ( service.begin(), service.end(), service.begin(), tolower );
     parameters.insert ( std::pair<std::string, std::string> ( "service", service ) );
 
     if ( pElem->QueryStringAttribute ( "version",&version ) != TIXML_SUCCESS ) {
-        LOGGER_DEBUG ( _ ( "No version attribute" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No version attribute" ;
         return;
     }
     parameters.insert ( std::pair<std::string, std::string> ( "version", version ) );
@@ -239,7 +239,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
     pElem = hGetTile.FirstChildElement().ToElement();
 
     if ( !pElem && pElem->ValueStr().find ( "Layer" ) ==std::string::npos && !pElem->GetText() ) {
-        LOGGER_DEBUG ( _ ( "No Layer" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No Layer" ;
         return;
     }
     parameters.insert ( std::pair<std::string, std::string> ( "layer", DocumentXML::getTextStrFromElem(pElem) ) );
@@ -248,7 +248,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
     pElem = pElem->NextSiblingElement();
 
     if ( !pElem && pElem->ValueStr().find ( "Style" ) == std::string::npos && !pElem->GetText() ) {
-        LOGGER_DEBUG ( _ ( "No Style" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No Style" ;
         return;
     }
     parameters.insert ( std::pair<std::string, std::string> ( "style", DocumentXML::getTextStrFromElem(pElem) ) );
@@ -257,7 +257,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
     pElem = pElem->NextSiblingElement();
 
     if ( !pElem && pElem->ValueStr().find ( "Format" ) ==std::string::npos && !pElem->GetText() ) {
-        LOGGER_DEBUG ( _ ( "No Format" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No Format" ;
         return;
     }
     parameters.insert ( std::pair<std::string, std::string> ( "format", DocumentXML::getTextStrFromElem(pElem) ) );
@@ -267,7 +267,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
     while ( pElem && pElem->ValueStr().find ( "DimensionNameValue" ) !=std::string::npos && pElem->GetText() ) {
         std::string dimensionName;
         if ( pElem->QueryStringAttribute ( "name",&dimensionName ) != TIXML_SUCCESS ) {
-            LOGGER_DEBUG ( _ ( "No Name attribute" ) );
+            BOOST_LOG_TRIVIAL(debug) <<   "No Name attribute" ;
             continue;
         } else {
             parameters.insert ( std::pair<std::string, std::string> ( dimensionName, DocumentXML::getTextStrFromElem(pElem) ) );
@@ -277,7 +277,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
 
     //TileMatrixSet
     if ( !pElem && pElem->ValueStr().find ( "TileMatrixSet" ) ==std::string::npos && !pElem->GetText() ) {
-        LOGGER_DEBUG ( _ ( "No TileMatrixSet" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No TileMatrixSet" ;
         return;
     }
     parameters.insert ( std::pair<std::string, std::string> ( "tilematrixset", DocumentXML::getTextStrFromElem(pElem) ) );
@@ -285,7 +285,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
     //TileMatrix
     pElem = pElem->NextSiblingElement();
     if ( !pElem && pElem->ValueStr().find ( "TileMatrix" ) ==std::string::npos && !pElem->GetText() ) {
-        LOGGER_DEBUG ( _ ( "No TileMatrix" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No TileMatrix" ;
         return;
     }
     parameters.insert ( std::pair<std::string, std::string> ( "tilematrix", DocumentXML::getTextStrFromElem(pElem) ) );
@@ -293,14 +293,14 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
     //TileRow
     pElem = pElem->NextSiblingElement();
     if ( !pElem && pElem->ValueStr().find ( "TileRow" ) ==std::string::npos && !pElem->GetText() ) {
-        LOGGER_DEBUG ( _ ( "No TileRow" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No TileRow" ;
         return;
     }
     parameters.insert ( std::pair<std::string, std::string> ( "tilerow", DocumentXML::getTextStrFromElem(pElem) ) );
     //TileCol
     pElem = pElem->NextSiblingElement();
     if ( !pElem && pElem->ValueStr().find ( "TileCol" ) ==std::string::npos && !pElem->GetText() ) {
-        LOGGER_DEBUG ( _ ( "No TileCol" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No TileCol" ;
         return;
     }
     parameters.insert ( std::pair<std::string, std::string> ( "tilecol", DocumentXML::getTextStrFromElem(pElem) ) );
@@ -309,7 +309,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
     // "VendorOption"
     while ( pElem ) {
         if ( pElem->ValueStr().find ( "VendorOption" ) !=std::string::npos && pElem->Attribute ( "name" ) ) {
-            LOGGER_DEBUG ( _ ( "VendorOption" ) );
+            BOOST_LOG_TRIVIAL(debug) <<   "VendorOption" ;
             std::string vendorOpt = pElem->Attribute ( "name" );
             std::transform ( vendorOpt.begin(), vendorOpt.end(), vendorOpt.begin(), ::tolower );
             parameters.insert ( std::pair<std::string, std::string> ( vendorOpt, ( pElem->GetText() ?DocumentXML::getTextStrFromElem(pElem) :"true" ) ) );
@@ -321,7 +321,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
     // "VendorOption"
     while ( pElem ) {
         if ( pElem->ValueStr().find ( "VendorOption" ) !=std::string::npos && pElem->Attribute ( "name" ) ) {
-            LOGGER_DEBUG ( "VendorOption" );
+            BOOST_LOG_TRIVIAL(debug) <<  "VendorOption" ;
             std::string vendorOpt = pElem->Attribute ( "name" );
             std::transform ( vendorOpt.begin(), vendorOpt.end(), vendorOpt.begin(), ::tolower );
             parameters.insert ( std::pair<std::string, std::string> ( vendorOpt, ( pElem->GetText() ?pElem->GetText() :"true" ) ) );
@@ -341,7 +341,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
  * \param[in,out] parameters associative parameters list
  */
 void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string >& parameters ) {
-    LOGGER_DEBUG ( _ ( "Parse GetMap Request" ) );
+    BOOST_LOG_TRIVIAL(debug) <<   "Parse GetMap Request" ;
     TiXmlElement* pElem = hGetMap.ToElement();
     std::string version;
     std::string sldVersion;
@@ -354,7 +354,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
     parameters.insert ( std::pair<std::string, std::string> ( "request", "getmap" ) );
 
     if ( pElem->QueryStringAttribute ( "version",&version ) != TIXML_SUCCESS ) {
-        LOGGER_DEBUG ( _ ( "No version attribute" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No version attribute" ;
         return;
     }
     parameters.insert ( std::pair<std::string, std::string> ( "version", version ) );
@@ -363,12 +363,12 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
 
     pElem=hGetMap.FirstChildElement().ToElement();
     if ( !pElem && pElem->ValueStr().find ( "StyledLayerDescriptor" ) ==std::string::npos ) {
-        LOGGER_DEBUG ( _ ( "No StyledLayerDescriptor" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No StyledLayerDescriptor" ;
         return;
     }
     pElem=hGetMap.FirstChildElement().FirstChildElement().ToElement();
     if ( !pElem ) {
-        LOGGER_DEBUG ( _ ( "Empty StyledLayerDescriptor" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "Empty StyledLayerDescriptor" ;
         return;
     }
 
@@ -384,7 +384,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
 
         TiXmlElement* pElemNamedLayer = pElem->FirstChildElement();
         if ( !pElemNamedLayer && pElemNamedLayer->ValueStr().find ( "Name" ) ==std::string::npos && !pElemNamedLayer->GetText() ) {
-            LOGGER_DEBUG ( _ ( "NamedLayer without Name" ) );
+            BOOST_LOG_TRIVIAL(debug) <<   "NamedLayer without Name" ;
             return;
         }
         if ( layers.size() >0 ) {
@@ -397,13 +397,13 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
         while ( pElemNamedLayer->ValueStr().find ( "NamedStyle" ) ==std::string::npos ) {
             pElemNamedLayer = pElemNamedLayer->NextSiblingElement();
             if ( !pElemNamedLayer ) {
-                LOGGER_DEBUG ( _ ( "NamedLayer without NamedStyle, use default style" ) );
+                BOOST_LOG_TRIVIAL(debug) <<   "NamedLayer without NamedStyle, use default style" ;
                 break;
             }
         }
         pElemNamedLayer = pElemNamedLayer->FirstChildElement();
         if ( !pElemNamedLayer && pElemNamedLayer->ValueStr().find ( "Name" ) ==std::string::npos && !pElemNamedLayer->GetText() ) {
-            LOGGER_DEBUG ( _ ( "NamedStyle without Name" ) );
+            BOOST_LOG_TRIVIAL(debug) <<   "NamedStyle without Name" ;
             return;
         } else {
             styles.append ( pElemNamedLayer->GetText() );
@@ -412,7 +412,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
 
     }
     if ( layers.size() <=0 ) {
-        LOGGER_DEBUG ( _ ( "StyledLayerDescriptor without NamedLayer" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "StyledLayerDescriptor without NamedLayer" ;
         return;
     }
 
@@ -423,7 +423,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
     pElem=hGetMap.FirstChildElement().ToElement()->NextSiblingElement();
     ;
     if ( !pElem && pElem->ValueStr().find ( "CRS" ) ==std::string::npos && !pElem->GetText() ) {
-        LOGGER_DEBUG ( _ ( "No CRS" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No CRS" ;
         return;
     }
 
@@ -433,7 +433,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
 
     pElem = pElem->NextSiblingElement();
     if ( !pElem && pElem->ValueStr().find ( "BoundingBox" ) ==std::string::npos ) {
-        LOGGER_DEBUG ( _ ( "No BoundingBox" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "No BoundingBox" ;
         return;
     }
 
@@ -441,7 +441,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
     //eg output image in EPSG:3857 BBox defined in EPSG:4326
     TiXmlElement * pElemBBox = pElem->FirstChildElement();
     if ( !pElemBBox && pElemBBox->ValueStr().find ( "LowerCorner" ) ==std::string::npos && !pElemBBox->GetText() ) {
-        LOGGER_DEBUG ( _ ( "BoundingBox Invalid" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "BoundingBox Invalid" ;
         return;
     }
 
@@ -451,7 +451,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
 
     pElemBBox = pElemBBox->NextSiblingElement();
     if ( !pElemBBox && pElemBBox->ValueStr().find ( "UpperCorner" ) ==std::string::npos && !pElemBBox->GetText() ) {
-        LOGGER_DEBUG ( _ ( "BoundingBox Invalid" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "BoundingBox Invalid" ;
         return;
     }
     bbox.append ( pElemBBox->GetText() );
@@ -463,31 +463,31 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
     {
         pElem = pElem->NextSiblingElement();
         if ( !pElem && pElem->ValueStr().find ( "Output" ) ==std::string::npos ) {
-            LOGGER_DEBUG ( _ ( "No Output" ) );
+            BOOST_LOG_TRIVIAL(debug) <<   "No Output" ;
             return;
         }
         TiXmlElement * pElemOut =  pElem->FirstChildElement();
         if ( !pElemOut && pElemOut->ValueStr().find ( "Size" ) ==std::string::npos ) {
-            LOGGER_DEBUG ( _ ( "Output Invalid no Size" ) );
+            BOOST_LOG_TRIVIAL(debug) <<   "Output Invalid no Size" ;
             return;
         }
         TiXmlElement * pElemOutTmp =  pElemOut->FirstChildElement();
         if ( !pElemOutTmp && pElemOutTmp->ValueStr().find ( "Width" ) ==std::string::npos && !pElemOutTmp->GetText() ) {
-            LOGGER_DEBUG ( _ ( "Output Invalid, Width incorrect" ) );
+            BOOST_LOG_TRIVIAL(debug) <<   "Output Invalid, Width incorrect" ;
             return;
         }
         parameters.insert ( std::pair<std::string, std::string> ( "width", pElemOutTmp->GetText() ) );
 
         pElemOutTmp =  pElemOutTmp->NextSiblingElement();
         if ( !pElemOutTmp && pElemOutTmp->ValueStr().find ( "Height" ) ==std::string::npos && !pElemOutTmp->GetText() ) {
-            LOGGER_DEBUG ( "Output Invalid, Height incorrect" );
+            BOOST_LOG_TRIVIAL(debug) <<  "Output Invalid, Height incorrect" ;
             return;
         }
         parameters.insert ( std::pair<std::string, std::string> ( "height", pElemOutTmp->GetText() ) );
 
         pElemOut =  pElemOut->NextSiblingElement();
         if ( !pElemOut && pElemOut->ValueStr().find ( "Format" ) ==std::string::npos && !pElemOut->GetText() ) {
-            LOGGER_DEBUG ( _ ( "Output Invalid no Format" ) );
+            BOOST_LOG_TRIVIAL(debug) <<   "Output Invalid no Format" ;
             return;
         }
 
@@ -554,7 +554,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
         if ( pElem->ValueStr().find ( "Elevation" ) !=std::string::npos ) {
             pElem = pElem->FirstChildElement();
             if ( !pElem ) {
-                LOGGER_DEBUG ( _ ( "Elevation incorrect" ) );
+                BOOST_LOG_TRIVIAL(debug) <<   "Elevation incorrect" ;
                 return;
             }
             std::string elevation;
@@ -604,12 +604,12 @@ void parsePostContent ( std::string content, std::map< std::string, std::string 
     TiXmlDocument doc ( "request" );
     content.append ( "\n" );
     if ( !doc.Parse ( content.c_str() ) ) {
-        LOGGER_INFO ( _ ( "POST request with invalid content" ) );
+        BOOST_LOG_TRIVIAL(info) <<   "POST request with invalid content" ;
         return;
     }
     TiXmlElement *rootEl = doc.FirstChildElement();
     if ( !rootEl ) {
-        LOGGER_INFO ( _ ( "Cannot retrieve XML root element" ) );
+        BOOST_LOG_TRIVIAL(info) <<   "Cannot retrieve XML root element" ;
         return;
     }
     //TODO Unfold Soap envelope
@@ -698,6 +698,11 @@ void Request::determineServiceAndRequest() {
                 request = RequestType::GETLAYERMETADATA;
             }
 
+            else if (tmsVersionPos == pathParts.size() - 3 && pathParts.back() == "gdal.xml") {
+                // la version est en avant dernière position, on veut le détail de la couche
+                request = RequestType::GETLAYERGDAL;
+            }
+
             else if (tmsVersionPos == pathParts.size() - 5) {
                 // on requête une tuile
                 request = RequestType::GETTILE;
@@ -764,7 +769,7 @@ void Request::determineServiceAndRequest() {
 Request::Request ( char* strquery, char* hostName, char* path, char* https ) : 
     hostName ( hostName ),path ( path ), service(ServiceType::SERVICE_MISSING), request(RequestType::REQUEST_MISSING)
 {
-    LOGGER_DEBUG ( "QUERY="<<strquery );
+    BOOST_LOG_TRIVIAL(debug) <<  "QUERY="<<strquery ;
     if ( https && (strcmp ( https,"on" ) == 0 || strcmp ( https,"ON" ) ==0) ){
         scheme = "https://";
     } else {
@@ -793,7 +798,7 @@ Request::Request ( char* strquery, char* hostName, char* path, char* https ) :
 Request::Request ( char* strquery, char* hostName, char* path, char* https, std::string postContent ) : 
     hostName ( hostName ),path ( path ), service(ServiceType::SERVICE_MISSING), request(RequestType::REQUEST_MISSING)
 {
-    LOGGER_DEBUG ( "QUERY="<<strquery );
+    BOOST_LOG_TRIVIAL(debug) <<  "QUERY="<<strquery ;
     if ( https && (strcmp ( https,"on" ) == 0 || strcmp ( https,"ON" ) ==0) ){
         scheme = "https://";
     } else {

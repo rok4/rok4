@@ -3,6 +3,7 @@
 ROK4 est un projet open-source (sous licence CeCILL-C) développé par les équipes du projet Géoportail de l’Institut National de l’Information Géographique et Forestière. Il contient un serveur (ROK4SERVER), écrit en C++, permettant la diffusion de données raster ou vecteur, et une suite d'outils (ROK4GENERATION) permettant de préparer les données utilisées par le serveur.
 
 Le serveur implémente les standards ouverts de l’Open Geospatial Consortium (OGC) WMS 1.3.0 et WMTS 1.0.0, ainsi que le TMS (Tile Map Service). Il est utilisé pour l’intégralité de la diffusion des flux images et vecteur tuilé de la dernière version du Géoportail. Répondant aux besoins de diffusion image de l’IGN, ROK4SERVER vise deux objectifs principaux :
+
 * L’utilisation d’un cache de données raster unique permettant de servir indifféremment des flux WMS, WMTS et TMS
 * Des performances de traitement d’image et de diffusion accrues
 * La diffusion de tuiles vecteur telles qu'elles sont stockées, sans transformation (TMS uniquement)
@@ -89,16 +90,16 @@ La compilation du projet n’a pour le moment été validée que sous GNU/Linux 
 Afin de connaître les paquets et librairies à installer, référez vous aux Dockerfiles :
 
 * Compilation du serveur ROK4 :
-	* [Debian 9](./docker/rok4server/stretch.Dockerfile)
-	* [Debian 10](./docker/rok4server/buster.Dockerfile)
+	* [Debian 10](./docker/rok4server/debian10.Dockerfile)
 	* [Centos 7](./docker/rok4server/centos7.Dockerfile)
 
 * Compilation des outils de génération ROK4 :
-	* [Debian 10](./docker/rok4generation/buster.Dockerfile)
+	* [Debian 10](./docker/rok4generation/debian10.Dockerfile)
 
 ## Les commandes externes
 
 Les outils suivant sont nécessaires aux outils de génération :
+
 * wget (be4)
 * ogr2ogr (4alamo)
 * tippecanoe (4alamo) : https://github.com/mapbox/tippecanoe.git
@@ -108,6 +109,8 @@ Les outils suivant sont nécessaires aux outils de génération :
 Pour la documentation du code source C++ : `sudo apt install doxygen graphviz`
 
 Pour la documentation du code source Perl : `sudo apt install naturaldocs`
+
+Pour la documentation utilisateur : `sudo apt install mkdocs && pip3 install mkdocs-exclude mkdocs-select-files`
 
 ## La compilation et l'installation
 
@@ -135,7 +138,7 @@ make [install|package]`
 
 `BUILD_BE4 (BOOL)` : Compilation de la partie ROK4GENERATION Valeur par défaut : `TRUE`
 
-`BUILD_DOC (BOOL)` : Compilation de la documentation automatique (Doxygen et Naturaldocs). Crée la cible de compilation `make doc` à faire avant `make install`. Valeur par défaut : `TRUE`
+`BUILD_DOC (BOOL)` : Compilation de la documentation automatique (Doxygen, Naturaldocs et mkdocs). Crée la cible de compilation `make doc` à faire avant `make install`. Valeur par défaut : `TRUE`
 
 `UNITTEST (BOOL)` : Compilation des tests unitaires. Crée la cible de compilation `make test`. Valeur par défaut : `FALSE`
 

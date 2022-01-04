@@ -118,10 +118,10 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
 
     /********************** Parse */
 
-    LOGGER_INFO ( _ ( "Construction de la configuration des services depuis " ) <<servicesConfigFile );
+    BOOST_LOG_TRIVIAL(info) <<   "Construction de la configuration des services depuis " <<servicesConfigFile ;
     TiXmlDocument doc ( servicesConfigFile );
     if ( !doc.LoadFile() ) {
-        LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << servicesConfigFile );
+        BOOST_LOG_TRIVIAL(error) <<   "Ne peut pas charger le fichier " << servicesConfigFile ;
         return;
     }
 
@@ -131,11 +131,11 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
 
     pElem=hDoc.FirstChildElement().Element();
     if ( !pElem ) {
-        LOGGER_ERROR ( servicesConfigFile << _ ( " impossible de recuperer la racine." ) );
+        BOOST_LOG_TRIVIAL(error) <<  servicesConfigFile <<  " impossible de recuperer la racine." ;
         return;
     }
     if ( pElem->ValueStr() != "servicesConf" ) {
-        LOGGER_ERROR ( servicesConfigFile << _ ( " La racine n'est pas un servicesConf." ) );
+        BOOST_LOG_TRIVIAL(error) <<  servicesConfigFile <<  " La racine n'est pas un servicesConf." ;
         return;
     }
     hRoot=TiXmlHandle ( pElem );
@@ -167,7 +167,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( pElem && pElem->GetText() ) {
         std::string postStr = DocumentXML::getTextStrFromElem(pElem);
         if ( postStr.compare ( "true" ) ==0 || postStr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( _ ( "Requete POST autorisee" ) );
+            BOOST_LOG_TRIVIAL(info) <<   "Requete POST autorisee" ;
             postMode = true;
         }
     }
@@ -224,7 +224,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( !pElem || ! ( pElem->GetText() ) ) {
         layerLimit = DEFAULT_LAYER_LIMIT;
     } else if ( !sscanf ( pElem->GetText(),"%d",&layerLimit ) ) {
-        LOGGER_ERROR ( servicesConfigFile << _ ( "Le layerLimit est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
+        BOOST_LOG_TRIVIAL(error) <<  servicesConfigFile <<  "Le layerLimit est inexploitable:[" << DocumentXML::getTextStrFromElem(pElem) << "]" ;
         return;
     }
 
@@ -232,7 +232,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxWidth=MAX_IMAGE_WIDTH;
     } else if ( !sscanf ( pElem->GetText(),"%d",&maxWidth ) ) {
-        LOGGER_ERROR ( servicesConfigFile << _ ( "Le maxWidth est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
+        BOOST_LOG_TRIVIAL(error) <<  servicesConfigFile <<  "Le maxWidth est inexploitable:[" << DocumentXML::getTextStrFromElem(pElem) << "]" ;
         return;
     }
 
@@ -240,7 +240,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxHeight=MAX_IMAGE_HEIGHT;
     } else if ( !sscanf ( pElem->GetText(),"%d",&maxHeight ) ) {
-        LOGGER_ERROR ( servicesConfigFile << _ ( "Le maxHeight est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
+        BOOST_LOG_TRIVIAL(error) <<  servicesConfigFile <<  "Le maxHeight est inexploitable:[" << DocumentXML::getTextStrFromElem(pElem) << "]" ;
         return;
     }
 
@@ -248,7 +248,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxTileX=MAX_TILE_X;
     } else if ( !sscanf ( pElem->GetText(),"%d",&maxTileX ) ) {
-        LOGGER_ERROR ( servicesConfigFile << _ ( "Le maxTileX est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
+        BOOST_LOG_TRIVIAL(error) <<  servicesConfigFile <<  "Le maxTileX est inexploitable:[" << DocumentXML::getTextStrFromElem(pElem) << "]" ;
         return;
     }
 
@@ -256,7 +256,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxTileY=MAX_TILE_Y;
     } else if ( !sscanf ( pElem->GetText(),"%d",&maxTileY ) ) {
-        LOGGER_ERROR ( servicesConfigFile << _ ( "Le maxTileY est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
+        BOOST_LOG_TRIVIAL(error) <<  servicesConfigFile <<  "Le maxTileY est inexploitable:[" << DocumentXML::getTextStrFromElem(pElem) << "]" ;
         return;
     }
 
@@ -272,7 +272,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
             format != "image/x-bil;bits=32" &&
             format != "image/gif" && 
             format != "text/asc" ) {
-            LOGGER_ERROR ( servicesConfigFile << _ ( "le format d'image [" ) << format << _ ( "] n'est pas un type MIME pris en charge" ) );
+            BOOST_LOG_TRIVIAL(error) <<  servicesConfigFile <<  "le format d'image [" << format <<  "] n'est pas un type MIME pris en charge" ;
         } else {
             formatList.push_back ( format );
         }
@@ -291,7 +291,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( pElem && pElem->GetText() ) {
         std::string doweuselistofequalsCRSstr = DocumentXML::getTextStrFromElem(pElem);
         if ( doweuselistofequalsCRSstr.compare ( "true" ) ==0 || doweuselistofequalsCRSstr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( _ ( "Pas de reprojection pour les CRS equivalents" ) );
+            BOOST_LOG_TRIVIAL(info) <<   "Pas de reprojection pour les CRS equivalents" ;
             doweuselistofequalsCRS = true;
             listofequalsCRS = ConfLoader::loadListEqualsCRS();
         }
@@ -301,7 +301,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( pElem && pElem->GetText() ) {
         std::string addEqualsCRSstr = DocumentXML::getTextStrFromElem(pElem);
         if ( addEqualsCRSstr.compare ( "true" ) ==0 || addEqualsCRSstr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( _ ( "Ajout automatique des CRS equivalents" ) );
+            BOOST_LOG_TRIVIAL(info) <<   "Ajout automatique des CRS equivalents" ;
             addEqualsCRS = true;
             if (!doweuselistofequalsCRS){
                 listofequalsCRS = ConfLoader::loadListEqualsCRS();
@@ -313,7 +313,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( pElem && pElem->GetText() ) {
         std::string restritedCRSListfile = DocumentXML::getTextStrFromElem(pElem);
         if ( restritedCRSListfile.compare ( "" ) != 0 )  {
-            LOGGER_INFO ( _ ( "Liste restreinte de CRS à partir du fichier " ) << restritedCRSListfile );
+            BOOST_LOG_TRIVIAL(info) <<   "Liste restreinte de CRS à partir du fichier " << restritedCRSListfile ;
             dowerestrictCRSList = true;
             restrictedCRSList = ConfLoader::loadStringVectorFromFile(restritedCRSListfile);
         }
@@ -327,7 +327,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
         std::string crsStr ( DocumentXML::getTextStrFromElem(pElem) );
         CRS crs ( crsStr );
         if ( !crs.isProj4Compatible() ) {
-            LOGGER_ERROR ( servicesConfigFile << _ ( "The CRS [" ) << crsStr << _ ( "] is not present in Proj4" ) );
+            BOOST_LOG_TRIVIAL(error) <<  servicesConfigFile <<  "The CRS [" << crsStr <<  "] is not present in Proj4" ;
         } else {
             std::vector<CRS> tmpEquilist;
             if (addEqualsCRS){
@@ -347,9 +347,9 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
                 }
                 if (!found) {
                     globalCRSList.push_back ( crs );
-                    LOGGER_INFO ( _ ( "Adding global CRS " ) << crsStr  );
+                    BOOST_LOG_TRIVIAL(info) <<   "Adding global CRS " << crsStr  ;
                 } else {
-                    LOGGER_WARN ( _ ( "Already present in global CRS list " ) << crsStr  );
+                    BOOST_LOG_TRIVIAL(warning) <<   "Already present in global CRS list " << crsStr  ;
                 }
                 for (unsigned int l = 0; l< tmpEquilist.size();l++) {
                     found = false;
@@ -361,13 +361,13 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
                     }
                     if (!found) {
                         globalCRSList.push_back( tmpEquilist.at( l ) );
-                        LOGGER_INFO ( _ ( "Adding equivalent global CRS [" ) << tmpEquilist.at( l ).getRequestCode() << _ ( "] of [" ) << crsStr << "]" );
+                        BOOST_LOG_TRIVIAL(info) <<   "Adding equivalent global CRS [" << tmpEquilist.at( l ).getRequestCode() <<  "] of [" << crsStr << "]" ;
                     } else {
-                        LOGGER_WARN ( _ ( "Already present in global CRS list " ) << tmpEquilist.at( l ).getRequestCode()  );   
+                        BOOST_LOG_TRIVIAL(warning) <<   "Already present in global CRS list " << tmpEquilist.at( l ).getRequestCode()  ;   
                     }
                 }
             } else {
-                LOGGER_WARN ( _ ( "Forbiden global CRS " ) << crsStr  );
+                BOOST_LOG_TRIVIAL(warning) <<   "Forbiden global CRS " << crsStr  ;
             }
         }
     }
@@ -382,12 +382,12 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
             }
         }
         if ( !crs84Found ) {
-            LOGGER_INFO ( _ ( "CRS:84 not found -> adding global CRS CRS:84" )  );
+            BOOST_LOG_TRIVIAL(info) <<   "CRS:84 not found -> adding global CRS CRS:84"  ;
             globalCRSList.push_back ( CRS ( "CRS:84" ) );
             std::vector<CRS> tmpEquilist = ConfLoader::getEqualsCRS(listofequalsCRS, "CRS:84" );
             for (unsigned int l = 0; l< tmpEquilist.size();l++){
                 globalCRSList.push_back( tmpEquilist.at( l ) );
-                LOGGER_INFO ( _ ( "Adding equivalent global CRS [" ) << tmpEquilist.at( l ).getRequestCode() << _ ( "] of [CRS:84]") );
+                BOOST_LOG_TRIVIAL(info) <<   "Adding equivalent global CRS [" << tmpEquilist.at( l ).getRequestCode() <<  "] of [CRS:84]" ;
             }
         }
     }
@@ -396,7 +396,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( pElem && pElem->GetText() ) {
         std::string styleStr = DocumentXML::getTextStrFromElem(pElem);
         if ( styleStr.compare ( "true" ) ==0 || styleStr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( _ ( "Utilisation des styles pour tous les formats" ) );
+            BOOST_LOG_TRIVIAL(info) <<   "Utilisation des styles pour tous les formats" ;
             fullStyling = true;
         }
     }
@@ -412,7 +412,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( pElem && pElem->GetText() ) {
         std::string inspirestr = DocumentXML::getTextStrFromElem(pElem);
         if ( inspirestr.compare ( "true" ) ==0 || inspirestr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( _ ( "Utilisation du mode Inspire" ) );
+            BOOST_LOG_TRIVIAL(info) <<   "Utilisation du mode Inspire" ;
             inspire = true;
         }
     }
@@ -436,20 +436,20 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
             pElem = pElem->NextSiblingElement ( "mediaType" );
         } else {
             if ( inspire ) {
-                LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
+                BOOST_LOG_TRIVIAL(error) <<   "Metadata element incorrect" ;
                 return;
             } else {
-                LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
+                BOOST_LOG_TRIVIAL(info) <<   "Metadata element incorrect" ;
             }
         }
         if ( pElem &&  pElem->GetText() ) {
             metadataMediaTypeWMS = DocumentXML::getTextStrFromElem(pElem);
         } else {
             if ( inspire ) {
-                LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
+                BOOST_LOG_TRIVIAL(error) <<   "Metadata element incorrect" ;
                 return;
             } else {
-                LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
+                BOOST_LOG_TRIVIAL(info) <<   "Metadata element incorrect" ;
             }
         }
     }
@@ -462,20 +462,20 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
             pElem = pElem->NextSiblingElement ( "mediaType" );
         } else {
             if ( inspire ) {
-                LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
+                BOOST_LOG_TRIVIAL(error) <<   "Metadata element incorrect" ;
                 return;
             } else {
-                LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
+                BOOST_LOG_TRIVIAL(info) <<   "Metadata element incorrect" ;
             }
         }
         if ( pElem &&  pElem->GetText() ) {
             metadataMediaTypeWMTS = DocumentXML::getTextStrFromElem(pElem);
         } else {
             if ( inspire ) {
-                LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
+                BOOST_LOG_TRIVIAL(error) <<   "Metadata element incorrect" ;
                 return;
             } else {
-                LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
+                BOOST_LOG_TRIVIAL(info) <<   "Metadata element incorrect" ;
             }
         }
     }
@@ -488,20 +488,20 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
             pElem = pElem->NextSiblingElement ( "mediaType" );
         } else {
             if ( inspire ) {
-                LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
+                BOOST_LOG_TRIVIAL(error) <<   "Metadata element incorrect" ;
                 return;
             } else {
-                LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
+                BOOST_LOG_TRIVIAL(info) <<   "Metadata element incorrect" ;
             }
         }
         if ( pElem &&  pElem->GetText() ) {
             metadataMediaTypeTMS = DocumentXML::getTextStrFromElem(pElem);
         } else {
             if ( inspire ) {
-                LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
+                BOOST_LOG_TRIVIAL(error) <<   "Metadata element incorrect" ;
                 return;
             } else {
-                LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
+                BOOST_LOG_TRIVIAL(info) <<   "Metadata element incorrect" ;
             }
         }
     }
@@ -529,7 +529,7 @@ bool ServicesXML::are_the_two_CRS_equal( std::string crs1, std::string crs2 ) {
         if ( found1 != std::string::npos  )  {
             std::size_t found2 = line.find(crs2);
             if ( found2 != std::string::npos  )  {
-                LOGGER_DEBUG ( "The two CRS (source and destination) are equals and were found on line  " << line );
+                BOOST_LOG_TRIVIAL(debug) <<  "The two CRS (source and destination) are equals and were found on line  " << line ;
                 return true;
             }
         }

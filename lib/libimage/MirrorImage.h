@@ -56,7 +56,7 @@
 #include "Format.h"
 #include <vector>
 #include <cstring>
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 
 /**
@@ -175,12 +175,12 @@ public:
      * \brief Mirror image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "------ MirrorImage -------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "------ MirrorImage -------" ;
         Image::print();
-        LOGGER_INFO ( "\t- Mirror's position = " << position );
-        LOGGER_INFO ( "\t- Mirror's size = " << mirrorSize );
-        LOGGER_INFO ( "" );
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Mirror's position = " << position ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Mirror's size = " << mirrorSize ;
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
     }
 };
 

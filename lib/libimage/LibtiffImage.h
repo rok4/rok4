@@ -313,13 +313,13 @@ public:
      * \brief TIFF image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "---------- LibtiffImage ------------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "---------- LibtiffImage ------------" ;
         FileImage::print();
-        LOGGER_INFO ( "\t- Rows per strip : " << rowsperstrip );
-        if (oneTo8bits == 1) LOGGER_INFO ( "\t- We have to convert samples to 8 bits (min is white)");
-        if (oneTo8bits == 2) LOGGER_INFO ( "\t- We have to convert samples to 8 bits (min is black)");
-        LOGGER_INFO ( "" );
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Rows per strip : " << rowsperstrip ;
+        if (oneTo8bits == 1) BOOST_LOG_TRIVIAL(info) <<  "\t- We have to convert samples to 8 bits (min is white)";
+        if (oneTo8bits == 2) BOOST_LOG_TRIVIAL(info) <<  "\t- We have to convert samples to 8 bits (min is black)";
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
     }
 };
 

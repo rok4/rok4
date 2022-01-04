@@ -21,7 +21,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --help)
             echo "./build.sh <OPTIONS>"
-            echo "    --os buster|stretch|centos7"
+            echo "    --os debian10|centos7"
             echo "    --rok4server"
             echo "    --rok4generation"
             echo "    --proxy http://proxy.chez.vous:port"
@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
             ;;
 
         --proxy)
-            build_params="$build_params --build-arg proxy=$2"
+            build_params="$build_params --build-arg http_proxy=$2 --build-arg https_proxy=$2"
             shift 2
             ;;
 

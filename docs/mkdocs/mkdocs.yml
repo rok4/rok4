@@ -1,0 +1,37 @@
+site_name: Projet ROK4
+site_author: IGN
+repo_url: https://github.com/rok4/rok4/
+nav:
+    - Accueil: README.md
+    - Spécifications: docs/Specification_pyramide_ROK4.md
+    - Serveur ROK4: rok4server/README.md
+    - Outils de génération ROK4:
+        - Présentation générale: rok4generation/README.md
+        - BE4: rok4generation/main/bin/be4.md
+        - 4ALAMO: rok4generation/main/bin/4alamo.md
+        - JOINCACHE: rok4generation/main/bin/joincache.md
+        - TMS-TOOLBOX: rok4generation/main/bin/tms-toolbox.md
+    - Docker:
+        - Présentation générale: docker/README.md
+        - Serveur ROK4: docker/rok4server/README.md
+        - Outils de génération ROK4: docker/rok4generation/README.md
+plugins:
+  - select-files:
+      select: '([^\.]+)$'
+      where: 'lambda x : x == "md" or x == "png" or x == "Dockerfile" or x == "css" or x == "js"'
+  - exclude:
+      glob:
+        - build/*
+        - rok4server/tests/*
+        - cmake/*
+        - config/*
+        - lib/*
+        - service/*
+        - target/*
+
+markdown_extensions:
+    - fenced_code
+    - toc:
+        baselevel: 2
+        
+docs_dir: "../../"

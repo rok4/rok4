@@ -87,12 +87,14 @@ filepath_conf = /home/IGN/SOURCE/sources.txt
 
 
 Valeurs pour `compression` :
-* `raw`, `jpg`, `zip`, `lzw`, `pkb` : ces compressions officielles du format TIFF permettront une visualisation de la dalle dans un logiciel d'image externe
+
+* `raw`, `jpg`, `jpg90`, `zip`, `lzw`, `pkb` : ces compressions officielles du format TIFF permettront une visualisation de la dalle dans un logiciel d'image externe
 * `png` : ce format propre à ROK4 ne sera pas lisible en dehors du projet.
 
 Valeurs pour `compressionoption` :
+
 * `none` : ne change rien
-* `crop` : uniquement disponible pour la compression JPEG, crop permet de remplir de blanc les blocs (16x16 pixels) contenant un pixel blanc.
+* `crop` : uniquement disponible pour la compression JPEG ou JPEG90, crop permet de remplir de blanc les blocs (16x16 pixels) contenant un pixel blanc.
 
 Valeurs pour `color` : les valeur pour chaque canal sont séparées par des virgules.
 * pour des canaux entiers non signés sur 8 bits : une valeur entière de 0 à 255. Exemple : `255,255,255` pour une pyramide RGB
@@ -111,6 +113,7 @@ Valeurs pour `color` : les valeur pour chaque canal sont séparées par des virg
 | SWIFT            | `pyr_data_container_name` |                                                                             | obligatoire                      |
 
 Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution :
+
 * CEPH
     - `ROK4_CEPH_CONFFILE`
     - `ROK4_CEPH_USERNAME`
@@ -140,6 +143,7 @@ Dans le cas du stockage objet, certaines variables d'environnement doivent être
 | `update_mode`       | Mode de mise à jour                                                                      | obligatoire si `pyr_name_old` est présent |
 
 Valeurs pour `update_mode` :
+
 * `slink` : une nouvelle pyramide est créée, et les dalles de la pyramide ancêtre sont référencées avec un lien symbolique ou un objet symbolique
 * `hlink` : disponible pour le stockage fichier uniquement, une nouvelle pyramide est créée, et les dalles de la pyramide ancêtre sont référencées avec un lien physique
 * `copy` : une nouvelle pyramide est créée, et les dalles de la pyramide ancêtre sont recopiée dans la nouvelle pyramide
@@ -202,6 +206,7 @@ use_masks = TRUE
 ## La configuration des sources de données
 
 Pour générer une pyramide raster, il faut renseigner pour chaque niveau de coupure (niveau pour lequel les sources de données sont différentes ou lorsque l'on veut forcer un nouveau moissonnage) :
+
 * Soit le dossier des images géoréférencées
 * Soit le service WMS à interroger
 
@@ -221,6 +226,7 @@ Pour générer une pyramide raster, il faut renseigner pour chaque niveau de cou
 | `preprocess_tmp_dir` | Dossier dans lequel écrire les images prétraitées                                                              | obligatoire                      |
 
 Les images géoréférencées retenues sont les fichiers :
+
 * TIFF (extensions .tif, .TIF, .tiff and .TIFF)
 * PNG (extensions .png, .PNG)
 * JPEG2000 (extensions .jp2, .JP2)
@@ -247,6 +253,7 @@ L'interrogation du service WMS se fait via des requêtes GetMap en HTTP.
 | `min_size`                | Permet de supprimer des images moissonnées dont la taille est inférieure ou égale à cette valeur (suppression d'image monochromes en PNG par exemple)                           |                                  |
 
 Valeurs pour `wms_format` :
+
 * `image/png`
 * `image/tiff`
 * `image/jpeg`
@@ -283,6 +290,7 @@ path_image = /home/IGN/BDORTHOHR/
 ## Résumé des fichiers et dossiers manipulés
 
 Avec les configurations mises en exemple (pas le service WMS) :
+
 * La configuration principale `/home/IGN/conf.txt`
 * La configuration d'environnement `/home/IGN/env.txt`
 * La configuration de la source de données `/home/ign/SOURCE/sources.txt`

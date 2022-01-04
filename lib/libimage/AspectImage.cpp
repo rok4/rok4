@@ -37,7 +37,7 @@
 
 #include "AspectImage.h"
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 #include "Utils.h"
 #include <cstring>

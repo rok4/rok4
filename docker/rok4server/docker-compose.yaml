@@ -13,7 +13,7 @@ services:
       - ./viewer:/usr/share/nginx/html/viewer
 
   middle:
-    image: rok4/rok4server:3.7.2-buster
+    image: rok4/rok4server:3.11.0-centos7
     volumes:
       - volume-limadm:/pyramids/LIMADM
       - volume-alti:/pyramids/ALTI

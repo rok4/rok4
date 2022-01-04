@@ -50,7 +50,6 @@ class TileMatrixSetXML;
 #include "TileMatrixSet.h"
 
 #include "config.h"
-#include "intl.h"
 
 class TileMatrixSetXML : public DocumentXML
 {

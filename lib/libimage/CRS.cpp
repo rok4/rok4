@@ -44,7 +44,7 @@
  */
 
 #include "CRS.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include <proj_api.h>
 
 /**
@@ -77,7 +77,6 @@ bool isCrsProj4Compatible ( std::string crs ) {
     if ( !pj ) {
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
-        // LOGGER_DEBUG(_("erreur d initialisation ") << crs << " " << msg);
         pj_ctx_free ( ctx );
         return false;
     }
@@ -101,7 +100,6 @@ bool isCrsLongLat ( std::string crs ) {
     if ( !pj ) {
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
-        // LOGGER_DEBUG(_("erreur d initialisation ") << crs << " " << msg);
         pj_ctx_free ( ctx );
         return false;
     }
@@ -144,13 +142,10 @@ void CRS::fetchDefinitionArea() {
     if ( !pj ) {
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
-        // LOGGER_DEBUG(_("erreur d initialisation ") << crs << " " << msg);
         pj_ctx_free ( ctx );
         return;
     }
     pj_get_def_area ( pj, & ( definitionArea.xmin ), & ( definitionArea.ymin ), & ( definitionArea.xmax ), & ( definitionArea.ymax ) );
-    //LOGGER_DEBUG(proj4Code);
-    //definitionArea.print();
     pj_free ( pj );
     pj_ctx_free ( ctx );
 }
@@ -207,7 +202,7 @@ bool CRS::cmpRequestCode ( std::string crs ) {
 std::string CRS::getAuthority() {
     size_t pos=requestCode.find ( ':' );
     if ( pos<1 || pos >=requestCode.length() ) {
-        LOGGER_ERROR ( "Erreur sur le CRS " << requestCode << " : absence de separateur" );
+        BOOST_LOG_TRIVIAL(error) <<  "Erreur sur le CRS " << requestCode << " : absence de separateur" ;
         pos=requestCode.length();
     }
     return ( requestCode.substr ( 0,pos ) );
@@ -217,7 +212,7 @@ std::string CRS::getAuthority() {
 std::string CRS::getIdentifier() {
     size_t pos=requestCode.find ( ':' );
     if ( pos<1 || pos >=requestCode.length() ) {
-        LOGGER_ERROR ( "Erreur sur le CRS " << requestCode << " : absence de separateur" );
+        BOOST_LOG_TRIVIAL(error) <<  "Erreur sur le CRS " << requestCode << " : absence de separateur" ;
         pos=-1;
     }
     return ( requestCode.substr ( pos+1 ) );
@@ -365,14 +360,14 @@ std::string CRS::getProj4Def() {
    if ( !pj ) {
        int err = pj_ctx_get_errno ( ctx );
        char *msg = pj_strerrno ( err );
-       LOGGER_DEBUG("erreur d initialisation " << getProj4Code() << " " << msg);
+       BOOST_LOG_TRIVIAL(debug) << "erreur d initialisation " << getProj4Code() << " " << msg;
        pj_ctx_free ( ctx );
        return "";
    }
    char * pjdef = pj_get_def( pj, 666 );
    std::string def( pjdef ); //666 option is to specify that we want all parameters (include towgs84 since we already have +nadgrids)
    pj_dalloc(pjdef);
-   //LOGGER_DEBUG("Définition de " << getProj4Code() << " : " << def );
+   //BOOST_LOG_TRIVIAL(debug) << "Définition de " << getProj4Code() << " : " << def ;
    pj_free ( pj );
    pj_ctx_free ( ctx );
    
@@ -387,7 +382,7 @@ std::string CRS::getProj4Param ( std::string paramName ) {
     }
     find_equal = toLowerCase( getProj4Def() ).find( "=", pos );
     find = toLowerCase( getProj4Def() ).find( " ", pos );
-    //LOGGER_DEBUG("Valeur du paramètre " + paramName + " : [" + toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1) + "]" );
+    //BOOST_LOG_TRIVIAL(debug) << "Valeur du paramètre " + paramName + " : [" + toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1) + "]" ;
     return toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1);
 }
 

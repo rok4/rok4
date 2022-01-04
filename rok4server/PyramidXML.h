@@ -53,7 +53,6 @@ class PyramidXML;
 #include "Level.h"
 
 #include "config.h"
-#include "intl.h"
 
 class PyramidXML : public DocumentXML
 {

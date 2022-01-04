@@ -53,7 +53,14 @@
 #include <fstream>
 #include "tiffio.h"
 #include "tiff.h"
-#include "Logger.h"
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/utility/setup/console.hpp>
+namespace logging = boost::log;
+namespace keywords = boost::log::keywords;
+
 #include "LibtiffImage.h"
 #include "CompoundImage.h"
 #include "Format.h"
@@ -88,7 +95,8 @@ std::string help = std::string("\ncomposeNtiff version ") + std::string(ROK4_VER
     "     -c output compression : default value : none\n"
     "             raw     no compression\n"
     "             none    no compression\n"
-    "             jpg     Jpeg encoding\n"
+    "             jpg     Jpeg encoding (quality 75)\n"
+    "             jpg90   Jpeg encoding (quality 90)\n"
     "             lzw     Lempel-Ziv & Welch encoding\n"
     "             pkb     PackBits encoding\n"
     "             zip     Deflate encoding\n"
@@ -105,7 +113,7 @@ std::string help = std::string("\ncomposeNtiff version ") + std::string(ROK4_VER
  * \details L'affichage se fait dans le niveau de logger INFO
  */
 void usage() {
-    LOGGER_INFO (help);
+    BOOST_LOG_TRIVIAL(info) << help;
 }
 
 /**
@@ -115,8 +123,8 @@ void usage() {
  * \param[in] errorCode code de retour
  */
 void error ( std::string message, int errorCode ) {
-    LOGGER_ERROR ( message );
-    LOGGER_ERROR ( "Source directory : " << inputDir );
+    BOOST_LOG_TRIVIAL(error) <<  message ;
+    BOOST_LOG_TRIVIAL(error) <<  "Source directory : " << inputDir ;
     usage();
     sleep ( 1 );
     exit ( errorCode );
@@ -142,18 +150,20 @@ int parseCommandLine ( int argc, char** argv ) {
                 break;
             case 's': // Input directory
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error id -s option" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error id -s option" ;
                     return -1;
                 }
                 inputDir = argv[i];
                 break;
             case 'c': // compression
                 if ( ++i == argc ) {
-                    LOGGER_ERROR("Error in -c option" );
+                    BOOST_LOG_TRIVIAL(error) << "Error in -c option" ;
                     return -1;
                 }
                 if ( strncmp ( argv[i], "none",4 ) == 0 || strncmp ( argv[i], "raw",3 ) == 0 ) {
                     compression = Compression::NONE;
+                } else if ( strncmp ( argv[i], "jpg90",5 ) == 0 ) {
+                    compression = Compression::JPEG90;
                 } else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) {
                     compression = Compression::JPEG;
                 } else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) {
@@ -163,26 +173,26 @@ int parseCommandLine ( int argc, char** argv ) {
                 } else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) {
                     compression = Compression::PACKBITS;
                 } else {
-                    LOGGER_ERROR ( "Unknown compression : " + argv[i][1] );
+                    BOOST_LOG_TRIVIAL(error) <<  "Unknown compression : " + argv[i][1] ;
                     return -1;
                 }
                 break;
             case 'g':
                 if ( i+2 >= argc ) {
-                    LOGGER_ERROR ( "Error in -g option" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error in -g option" ;
                     return -1;
                 }
                 widthwiseImage = atoi ( argv[++i] );
                 heightwiseImage = atoi ( argv[++i] );
                 break;
             default:
-                LOGGER_ERROR ( "Unknown option : " << argv[i] );
+                BOOST_LOG_TRIVIAL(error) <<  "Unknown option : " << argv[i] ;
                 return -1;
             }
         } else {
             if ( outputImage == 0 ) outputImage = argv[i];
             else {
-                LOGGER_ERROR( "Argument must specify just ONE output file" );
+                BOOST_LOG_TRIVIAL(error) <<  "Argument must specify just ONE output file" ;
                 return -1;
             }
         }
@@ -190,19 +200,19 @@ int parseCommandLine ( int argc, char** argv ) {
 
     // Input directory control
     if ( inputDir == 0 ) {
-        LOGGER_ERROR ( "We need to have a source images' directory (option -s)" );
+        BOOST_LOG_TRIVIAL(error) <<  "We need to have a source images' directory (option -s)" ;
         return -1;
     }
 
     // Output file control
     if ( outputImage == 0 ) {
-        LOGGER_ERROR ( "We need to have an output file" );
+        BOOST_LOG_TRIVIAL(error) <<  "We need to have an output file" ;
         return -1;
     }
 
     // Geometry control
     if ( widthwiseImage == 0 || heightwiseImage == 0) {
-        LOGGER_ERROR ( "We need to know composition geometry (option -g)" );
+        BOOST_LOG_TRIVIAL(error) <<  "We need to know composition geometry (option -g)" ;
         return -1;
     }
 
@@ -229,6 +239,7 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
     imagesIn.resize(heightwiseImage);
     for (int row = 0; row < heightwiseImage; row++)
         imagesIn.at(row).resize(widthwiseImage);
+    for ( int i = 0; i < heightwiseImage; i++ ) for ( int j = 0; j < widthwiseImage; j++ ) imagesIn[i][j] = NULL;
 
     int width, height;
     int samplesperpixel, bitspersample;
@@ -244,7 +255,7 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
     DIR * rep = opendir(inputDir);
 
     if (rep == NULL) {
-        LOGGER_ERROR("Cannot open input directory : " << inputDir);
+        BOOST_LOG_TRIVIAL(error) << "Cannot open input directory : " << inputDir;
         return -1;
     }
     
@@ -258,14 +269,14 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
 
     closedir(rep);
     
-    LOGGER_DEBUG(imagesNames.size() << " files in the provided directory");
+    BOOST_LOG_TRIVIAL(debug) << imagesNames.size() << " files in the provided directory";
     if (imagesNames.size() > widthwiseImage*heightwiseImage) {
-        LOGGER_WARN("We have too much images in the input directory (regarding to the provided geometry).");
-        LOGGER_WARN("Only " << widthwiseImage*heightwiseImage << " first images will be used");
+        BOOST_LOG_TRIVIAL(warning) << "We have too much images in the input directory (regarding to the provided geometry).";
+        BOOST_LOG_TRIVIAL(warning) << "Only " << widthwiseImage*heightwiseImage << " first images will be used";
     }
 
     if (imagesNames.size() < widthwiseImage*heightwiseImage) {
-        LOGGER_ERROR("Not enough images, we need " << widthwiseImage*heightwiseImage << ", and we find " << imagesNames.size());
+        BOOST_LOG_TRIVIAL(error) << "Not enough images, we need " << widthwiseImage*heightwiseImage << ", and we find " << imagesNames.size();
         return -1;
     }
 
@@ -287,7 +298,7 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
 
         FileImage* pImage = FIF.createImageToRead (filename, BoundingBox<double>(0,0,0,0), -1., -1. );
         if ( pImage == NULL ) {
-            LOGGER_ERROR ( "Cannot create a FileImage from the file " << filename );
+            BOOST_LOG_TRIVIAL(error) <<  "Cannot create a FileImage from the file " << filename ;
             return -1;
         }
 
@@ -308,7 +319,9 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
                  width != pImage->getWidth() ||
                  height != pImage->getHeight() )
             {
-                LOGGER_ERROR ( "All input images must have same dimensions and sample type : error for image " << filename );
+                delete pImage;
+                for ( int ii = 0; ii < heightwiseImage; ii++ ) for ( int jj = 0; jj < widthwiseImage; jj++ ) delete imagesIn[ii][jj];
+                BOOST_LOG_TRIVIAL(error) <<  "All input images must have same dimensions and sample type : error for image " << filename ;
                 return -1;
             }
         }
@@ -328,7 +341,7 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
     );
 
     if ( *ppImageOut == NULL ) {
-        LOGGER_ERROR ( "Impossible de creer l'image de sortie " << outputImage );
+        BOOST_LOG_TRIVIAL(error) <<  "Impossible de creer l'image de sortie " << outputImage ;
         return -1;
     }
 
@@ -349,21 +362,17 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
  */
 int main ( int argc, char **argv ) {
 
-    FileImage* pImageOut ;
-    CompoundImage* pCompoundIn;
+    FileImage* pImageOut = NULL;
+    CompoundImage* pCompoundIn = NULL;
 
     /* Initialisation des Loggers */
-    Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
-
-    Accumulator* acc = new StreamAccumulator();
-    Logger::setAccumulator ( INFO , acc );
-    Logger::setAccumulator ( WARN , acc );
-    Logger::setAccumulator ( ERROR, acc );
-    Logger::setAccumulator ( FATAL, acc );
-
-    std::ostream &logw = LOGGER ( WARN );
-    logw.precision ( 16 );
-    logw.setf ( std::ios::fixed,std::ios::floatfield );
+    boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::info );
+    logging::add_common_attributes();
+    boost::log::register_simple_formatter_factory< boost::log::trivial::severity_level, char >("Severity");
+    logging::add_console_log (
+        std::cout,
+        keywords::format = "%Severity%\t%Message%"
+    );
 
     // Lecture des parametres de la ligne de commande
     if ( parseCommandLine ( argc,argv ) < 0 ) {
@@ -372,29 +381,27 @@ int main ( int argc, char **argv ) {
 
     // On sait maintenant si on doit activer le niveau de log DEBUG
     if (debugLogger) {
-        Logger::setAccumulator(DEBUG, acc);
-        std::ostream &logd = LOGGER ( DEBUG );
-        logd.precision ( 16 );
-        logd.setf ( std::ios::fixed,std::ios::floatfield );
+        boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::debug );
     }
 
-    LOGGER_DEBUG ( "Load" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Load" ;
     // Chargement des images
     if ( loadImages ( &pImageOut, &pCompoundIn ) < 0 ) {
+        if ( pCompoundIn ) {
+            delete pCompoundIn;
+        }
+        if ( pImageOut ) {
+            delete pImageOut; 
+        }
         error ( "Cannot load images from the input directory",-1 );
     }
 
-    LOGGER_DEBUG ( "Save image" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Save image" ;
     // Enregistrement de l'image fusionnée
     if ( pImageOut->writeImage ( pCompoundIn ) < 0 ) {
         error ( "Cannot write the compound image",-1 );
     }
 
-    // Suppression du nettoyage du logger jusqu'à sa refonte
-    // Logger::stopLogger();
-    // if ( acc ) {
-    //     delete acc;
-    // }
     delete pCompoundIn;
     delete pImageOut;
 

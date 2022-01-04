@@ -62,7 +62,7 @@ Context * ContextBook::addContext(ContextType::eContextType type,std::string tra
 {
     Context* ctx;
     std::pair<ContextType::eContextType,std::string> key = make_pair(type,tray);
-    LOGGER_DEBUG("On essaye d'ajouter la clé " << ContextType::toString(key.first) <<" / " << key.second );
+    BOOST_LOG_TRIVIAL(debug) << "On essaye d'ajouter la clé " << ContextType::toString(key.first) <<" / " << key.second ;
 
     std::map<std::pair<ContextType::eContextType,std::string>, Context*>::iterator it = book.find (key);
     if ( it != book.end() ) {
@@ -90,19 +90,19 @@ Context * ContextBook::addContext(ContextType::eContextType type,std::string tra
                 break;
             default:
                 //ERREUR
-                LOGGER_ERROR("Ce type de contexte n'est pas géré.");
+                BOOST_LOG_TRIVIAL(error) << "Ce type de contexte n'est pas géré.";
                 return NULL;
         }
 
         // on connecte pour vérifier que ce contexte est valide
         if (!(ctx->connection())) {
-            LOGGER_ERROR("Impossible de connecter au contexte de type " << ContextType::toString(type) << ", contenant " << tray);
+            BOOST_LOG_TRIVIAL(error) << "Impossible de connecter au contexte de type " << ContextType::toString(type) << ", contenant " << tray;
             delete ctx;
             return NULL;
         }
 
 
-        //LOGGER_DEBUG("On insère ce contexte " << ctx->toString() );
+        //BOOST_LOG_TRIVIAL(debug) << "On insère ce contexte " << ctx->toString() ;
         book.insert(make_pair(key,ctx));
 
         return ctx;
@@ -114,7 +114,7 @@ Context * ContextBook::getContext(ContextType::eContextType type,std::string tra
 {
     std::map<std::pair<ContextType::eContextType,std::string>, Context*>::iterator it = book.find (make_pair(type,tray));
     if ( it == book.end() ) {
-        LOGGER_ERROR("Le contenant demandé n'a pas été trouvé dans l'annuaire.");
+        BOOST_LOG_TRIVIAL(error) << "Le contenant demandé n'a pas été trouvé dans l'annuaire.";
         return NULL;
     } else {
         //le contenant est déjà existant et donc connecté

@@ -7,7 +7,6 @@ build
 .DS_Store
 .vscode
 lib/libjpeg/libjpeg-turbo-1.2.0/autom4te.cache
-rok4/Pyramid.cpp.autosave
 CMakeLists.txt.user
 syntax: regexp
 ~
@@ -18,4 +17,5 @@ target
 .vagrant
 .vagrant.d
 ^install
-.vscode
+valgrind.log
+docs/naturaldocs/Data

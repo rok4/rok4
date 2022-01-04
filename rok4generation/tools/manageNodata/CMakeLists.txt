@@ -4,13 +4,6 @@ SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
 #Défini le nom du projet 
 project(manageNodata)
 
-#définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
-
-cmake_minimum_required(VERSION 2.6)
-
 ########################################
 #Attention aux chemins
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules ${CMAKE_MODULE_PATH})
@@ -55,10 +48,10 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${IMAGE_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
+set(DEP_INCLUDE_DIR ${IMAGE_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${BOOSTLOG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY tiff zlib proj logger image)
+set(DEP_LIBRARY tiff zlib proj image boostlog boostlogsetup boostthread boostfilesystem boostsystem)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 

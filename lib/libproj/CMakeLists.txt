@@ -1,11 +1,10 @@
 #Défini le nom du projet 
 project(proj)
+
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 SET(CPACK_PACKAGE_VERSION_MAJOR "4")
 SET(CPACK_PACKAGE_VERSION_MINOR "8")
 SET(CPACK_PACKAGE_VERSION_PATCH "0")
-
-cmake_minimum_required(VERSION 2.8.4)
 
 ########################################
 #Attention aux chemins
@@ -61,10 +60,10 @@ add_dependencies(proj proj-build)
 #Définition des dépendances.
 #include(ROK4Dependencies)
 
-#set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
+#set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-#set(DEP_LIBRARY fcgi tinyxml logger image proj zlib tiff)
+#set(DEP_LIBRARY fcgi tinyxml image proj zlib tiff)
 
 #include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 

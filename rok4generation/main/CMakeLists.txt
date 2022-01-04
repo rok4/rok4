@@ -4,13 +4,6 @@ SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
 #Défini le nom du projet 
 project(rok4generation-main)
 
-#définit la version du projet : 1.0.0 MAJOR.MINOR.PATCH
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
-
-cmake_minimum_required(VERSION 2.6)
-
 ########################################
 #Attention aux chemins
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules ${CMAKE_MODULE_PATH})
@@ -43,7 +36,7 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_
 
 set(DEP_INCLUDE_DIR ${TIFF_INCLUDE_DIR} )
 
-set(VERSION_TEXT ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
+set(VERSION_TEXT ${ROK4_VERSION})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Makefile.PL.in ${CMAKE_CURRENT_BINARY_DIR}/src/Makefile.PL @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/4alamo-file.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/4alamo-file.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/4alamo-ceph.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/4alamo-ceph.pl @ONLY)

@@ -49,7 +49,6 @@ class ServicesXML;
 #include "CRS.h"
 
 #include "config.h"
-#include "intl.h"
 
 class ServicesXML
 {

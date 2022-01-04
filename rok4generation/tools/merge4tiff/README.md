@@ -7,6 +7,7 @@
 Cet outil génère une image à partir 4 images de même dimension disposées en carré, en moyennant les pixels 4 par 4. L'image en sortie a les dimensions des images en entrée. Une image à utiliser comme fond peut être donnée. Il est possible de préciser une valeur de gamma pour exagérer les contrastes. Cet outil est utilisé pour générer une dalle d'un niveau à partir du niveau inférieur dans le cas d'une pyramide utilisant un TileMatrixSet de type Quad Tree.
 
 Les informations sur les canaux (nombre, taille en bits et format) peuvent :
+
 * être fournies et des conversions à la volée seront potentiellement faites sur les images n'ayant pas les mêmes
 * ne pas être fournies, auquel cas toutes les images en entrée doivent avoir les même caractéristiques
 
@@ -16,7 +17,7 @@ Les informations sur les canaux (nombre, taille en bits et format) peuvent :
 
 * `-g <FLOAT>` : valeur de gamma permettant d'augmenter les contrastes (si inférieur à 1) ou de les réduire (si supérieur à 1)
 * `-n <COLOR>` : couleur de nodata, valeurs décimales pour chaque canal, séparées par des virgules (exemple : 255,255,255 pour du blanc sans transparence)
-* `-c <COMPRESSION>` : compression des données dans l'image TIFF en sortie : jpg, raw (défaut), zip, lzw, pkb
+* `-c <COMPRESSION>` : compression des données dans l'image TIFF en sortie : jpg, jpg90, raw (défaut), zip, lzw, pkb
 * `-io <FILE>` : chemin de l'image de sortie
 * `-mo <FILE>` : chemin du masque de sortie associé (optionnel)
 * `-iX <FILE>` : chemin d'une image en entrée

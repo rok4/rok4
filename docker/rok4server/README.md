@@ -24,7 +24,8 @@ Il est aussi possible de définir toutes les variables d'environnement dans un f
 
 ## Lancement au sein d'une stack 
 
-Afin de tester facilement le serveur, il est possible de lancer une stack comprennant :
+Afin de tester facilement le serveur, il est possible de lancer une stack comprenant :
+
 * Un front NGINX, permettant l'interrogation du serveur en HTTP, avec une configuration minimale
 * Un serveur ROK4
 * Des jeux de données, disponible sous forme d'[images](https://hub.docker.com/r/rok4/dataset)
@@ -32,6 +33,7 @@ Afin de tester facilement le serveur, il est possible de lancer une stack compre
 En étant dans ce dossier, vous pouvez lancer la stack via la commande `docker-compose up`.
 
 Les capacités des 3 services rendus (WMS, WMTS et TMS) sont disponibles aux URL :
+
 * WMS : http://localhost:8082/data?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0
 * WMTS : http://localhost:8082/data?SERVICE=WMTS&REQUEST=GetCapabilities&VERSION=1.0.0
 * TMS : http://localhost:8082/data/1.0.0
